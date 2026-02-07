@@ -1,0 +1,90 @@
+# 1C EPF Skills for Claude Code
+
+Набор [Claude Code Skills](https://docs.anthropic.com/en/docs/claude-code/skills) для работы с исходниками внешних обработок 1С:Предприятия 8.3. Позволяет создавать, модифицировать и собирать обработки (`.epf`) из XML-исходников, не запоминая детали формата.
+
+## Навыки
+
+| Навык | Описание |
+|-------|----------|
+| `/epf-init` | Создать новую обработку (корневой XML + модуль объекта) |
+| `/epf-add-form` | Добавить управляемую форму |
+| `/epf-add-template` | Добавить макет (HTML, Text, SpreadsheetDocument, BinaryData) |
+| `/epf-remove-form` | Удалить форму |
+| `/epf-remove-template` | Удалить макет |
+| `/epf-build` | Собрать EPF из XML (документация команды 1cv8.exe) |
+| `/epf-dump` | Разобрать EPF в XML (документация команды 1cv8.exe) |
+
+## Быстрый старт
+
+```
+> /epf-init МояОбработка "Моя обработка"
+> /epf-add-form МояОбработка Форма --main
+> /epf-add-template МояОбработка Макет HTML
+> /epf-build МояОбработка
+```
+
+После `/epf-init` создаётся структура:
+
+```
+src/
+├── МояОбработка.xml                          # Корневой файл метаданных
+└── МояОбработка/
+    └── Ext/
+        └── ObjectModule.bsl                  # Модуль объекта
+```
+
+После `/epf-add-form` и `/epf-add-template`:
+
+```
+src/
+├── МояОбработка.xml
+└── МояОбработка/
+    ├── Ext/
+    │   └── ObjectModule.bsl
+    ├── Forms/
+    │   ├── Форма.xml                         # Метаданные формы
+    │   └── Форма/
+    │       └── Ext/
+    │           ├── Form.xml                  # Описание формы
+    │           └── Form/
+    │               └── Module.bsl            # Модуль формы
+    └── Templates/
+        ├── Макет.xml                         # Метаданные макета
+        └── Макет/
+            └── Ext/
+                └── Template.html             # Содержимое макета
+```
+
+## Требования
+
+- **Windows** с PowerShell 5.1+ (входит в Windows)
+- **1С:Предприятие 8.3** — для сборки/разборки EPF (навыки генерации XML работают без платформы)
+
+## Структура проекта
+
+```
+.claude/skills/          # Навыки Claude Code
+├── epf-init/            # SKILL.md + scripts/init.ps1
+├── epf-add-form/        # SKILL.md + scripts/add-form.ps1
+├── epf-add-template/    # SKILL.md + scripts/add-template.ps1
+├── epf-remove-form/     # SKILL.md + scripts/remove-form.ps1
+├── epf-remove-template/ # SKILL.md + scripts/remove-template.ps1
+├── epf-build/           # SKILL.md (только документация)
+└── epf-dump/            # SKILL.md (только документация)
+docs/
+├── 1c-xml-format-spec.md   # Спецификация XML-формата выгрузки
+└── build-spec.md            # Спецификация команд сборки/разборки
+```
+
+## Спецификации
+
+- [XML-формат выгрузки обработок](docs/1c-xml-format-spec.md) — полное описание структуры XML-файлов, namespace'ов, элементов форм
+- [Сборка и разборка EPF](docs/build-spec.md) — команды `1cv8.exe`, параметры, коды возврата
+
+## Технические детали
+
+- Все XML-файлы создаются в **UTF-8 с BOM** (как в реальных выгрузках 1С)
+- PowerShell-скрипты используют `System.Xml.XmlDocument` для модификации корневого XML
+- UUID генерируются через `[guid]::NewGuid()`
+- ClassId обработки фиксирован: `c3831ec8-d8d5-4f93-8a22-f9bfae07327f`
+- Порядок элементов в `ChildObjects`: TabularSections → Forms → Templates
