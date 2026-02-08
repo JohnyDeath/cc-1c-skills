@@ -1,64 +1,64 @@
 ---
 name: mxl-info
-description: Analyze SpreadsheetDocument (MXL) template structure — areas, parameters, column sets
-argument-hint: <TemplatePath> or <ProcessorName> <TemplateName>
+description: Анализ структуры макета табличного документа (MXL) — области, параметры, наборы колонок
+argument-hint: <TemplatePath> или <ProcessorName> <TemplateName>
 allowed-tools:
   - Bash
   - Read
   - Glob
 ---
 
-# /mxl-info — Template Structure Analyzer
+# /mxl-info — Анализ структуры макета
 
-Reads a SpreadsheetDocument Template.xml and outputs a compact summary: named areas, parameters, column sets. Replaces the need to read thousands of XML lines.
+Читает Template.xml табличного документа и выводит компактную сводку: именованные области, параметры, наборы колонок. Заменяет необходимость читать тысячи строк XML.
 
-## Usage
+## Использование
 
 ```
 /mxl-info <TemplatePath>
 /mxl-info <ProcessorName> <TemplateName>
 ```
 
-## Parameters
+## Параметры
 
-| Parameter     | Required | Default | Description                              |
-|---------------|:--------:|---------|------------------------------------------|
-| TemplatePath  | no       | —       | Direct path to Template.xml              |
-| ProcessorName | no       | —       | Processor name (alternative to path)     |
-| TemplateName  | no       | —       | Template name (alternative to path)      |
-| SrcDir        | no       | `src`   | Source directory                         |
-| Format        | no       | `text`  | Output format: `text` or `json`         |
-| WithText      | no       | false   | Include static text and template content |
-| MaxParams     | no       | 10      | Max parameters listed per area          |
-| Limit         | no       | 150     | Max output lines (truncation protection) |
-| Offset        | no       | 0       | Skip N lines (for pagination)           |
+| Параметр      | Обязательный | По умолчанию | Описание                                 |
+|---------------|:------------:|--------------|------------------------------------------|
+| TemplatePath  | нет          | —            | Прямой путь к Template.xml               |
+| ProcessorName | нет          | —            | Имя обработки (альтернатива пути)        |
+| TemplateName  | нет          | —            | Имя макета (альтернатива пути)           |
+| SrcDir        | нет          | `src`        | Каталог исходников                       |
+| Format        | нет          | `text`       | Формат вывода: `text` или `json`         |
+| WithText      | нет          | false        | Включить статический текст и шаблоны     |
+| MaxParams     | нет          | 10           | Макс. параметров в списке на область     |
+| Limit         | нет          | 150          | Макс. строк вывода (защита от переполнения) |
+| Offset        | нет          | 0            | Пропустить N строк (для пагинации)       |
 
-Specify either `-TemplatePath` or both `-ProcessorName` and `-TemplateName`.
+Укажите либо `-TemplatePath`, либо оба `-ProcessorName` и `-TemplateName`.
 
-## Command
+## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude/skills/mxl-info/scripts/mxl-info.ps1 -TemplatePath "<path>"
+powershell.exe -NoProfile -File .claude/skills/mxl-info/scripts/mxl-info.ps1 -TemplatePath "<путь>"
 ```
 
-Or with processor/template names:
+Или по имени обработки/макета:
 ```powershell
-powershell.exe -NoProfile -File .claude/skills/mxl-info/scripts/mxl-info.ps1 -ProcessorName "<Name>" -TemplateName "<Template>" [-SrcDir "<dir>"]
+powershell.exe -NoProfile -File .claude/skills/mxl-info/scripts/mxl-info.ps1 -ProcessorName "<Имя>" -TemplateName "<Макет>" [-SrcDir "<каталог>"]
 ```
 
-Additional flags:
+Дополнительные флаги:
 ```powershell
-... -WithText              # include cell text content
-... -Format json           # JSON output for programmatic use
-... -MaxParams 20          # show more parameters per area
-... -Offset 150            # pagination: skip first 150 lines
+... -WithText              # включить текстовое содержимое ячеек
+... -Format json           # JSON-вывод для программной обработки
+... -MaxParams 20          # показать больше параметров на область
+... -Offset 150            # пагинация: пропустить первые 150 строк
 ```
 
-## Reading the Output
+## Чтение вывода
 
-### Areas — sorted top-to-bottom
+### Области — сортировка сверху вниз
 
-Areas are listed in document order (by row position), not alphabetically. This matches the order you'll use in fill code — output areas from top to bottom.
+Области перечислены в порядке документа (по позиции строки), а не по алфавиту. Это соответствует порядку вывода областей в коде заполнения — сверху вниз.
 
 ```
 --- Named areas ---
@@ -68,15 +68,15 @@ Areas are listed in document order (by row position), not alphabetically. This m
   Итого              Rows     rows 16-17   (1 params)
 ```
 
-Area types:
-- **Rows** — horizontal area (row range). Use: `Макет.ПолучитьОбласть("Имя")`
-- **Columns** — vertical area (column range). Use: `Макет.ПолучитьОбласть("Имя")`
-- **Rectangle** — fixed area (rows + cols). Typically uses a separate column set.
-- **Drawing** — named picture/barcode.
+Типы областей:
+- **Rows** — горизонтальная область (диапазон строк). Получение: `Макет.ПолучитьОбласть("Имя")`
+- **Columns** — вертикальная область (диапазон колонок). Получение: `Макет.ПолучитьОбласть("Имя")`
+- **Rectangle** — фиксированная область (строки + колонки). Обычно использует отдельный набор колонок.
+- **Drawing** — именованный рисунок/штрихкод.
 
-### Column sets
+### Наборы колонок
 
-When template has multiple column sets, sizes are shown in header and per-area:
+Когда в макете несколько наборов колонок, их размеры показаны в заголовке и для каждой области:
 
 ```
   Column sets: 7 (default=19 cols + 6 additional)
@@ -87,20 +87,20 @@ When template has multiple column sets, sizes are shown in header and per-area:
   НумерацияЛистов    Rows     rows 59-59  (0 params) [colset 4cols]
 ```
 
-### Intersections
+### Пересечения
 
-When both Rows and Columns areas exist (labels, price tags), the script lists intersection pairs:
+Когда есть области и Rows, и Columns (этикетки, ценники), скрипт выводит пары пересечений:
 
 ```
 --- Intersections (use with GetArea) ---
   ВысотаЭтикетки|ШиринаЭтикетки
 ```
 
-Use in BSL: `Макет.ПолучитьОбласть("ВысотаЭтикетки|ШиринаЭтикетки")`
+В BSL: `Макет.ПолучитьОбласть("ВысотаЭтикетки|ШиринаЭтикетки")`
 
-### Parameters and detailParameter
+### Параметры и detailParameter
 
-Parameters are listed per area. If a parameter has a `detailParameter` (drill-down link), it's shown below:
+Параметры перечислены по областям. Если у параметра есть `detailParameter` (расшифровка), он показан ниже:
 
 ```
 --- Parameters by area ---
@@ -110,33 +110,33 @@ Parameters are listed per area. If a parameter has a `detailParameter` (drill-do
     detail: Товар->Номенклатура
 ```
 
-This means: parameter `Товар` shows the value, and clicking it opens `Номенклатура` (the detail object).
+Это означает: параметр `Товар` отображает значение, а при клике открывает `Номенклатура` (объект расшифровки).
 
-In BSL:
+В BSL:
 ```bsl
 Область.Параметры.Товар = СтрокаТЧ.Номенклатура;
 Область.Параметры.РасшифровкаТовар = СтрокаТЧ.Номенклатура; // detailParameter
 ```
 
-### Template parameters (`[tpl]` suffix)
+### Параметры из шаблонов (суффикс `[tpl]`)
 
-Some parameters are embedded in template text: `"Инв № [ИнвентарныйНомер]"`. These are filled via fillType=Template, not fillType=Parameter. The script always extracts them and marks with `[tpl]`:
+Некоторые параметры встроены в шаблонный текст: `"Инв № [ИнвентарныйНомер]"`. Они заполняются через fillType=Template, а не fillType=Parameter. Скрипт всегда извлекает их и помечает суффиксом `[tpl]`:
 
 ```
   НумерацияЛистов: Номер [tpl], Дата [tpl], НомерЛиста [tpl]
 ```
 
-In BSL, template parameters are filled the same way as regular ones:
+В BSL шаблонные параметры заполняются так же, как обычные:
 ```bsl
 Область.Параметры.Номер = НомерДокумента;
 Область.Параметры.Дата = ДатаДокумента;
 ```
 
-Numeric-only placeholders like `[5]`, `[6]` (footnote references in legal forms) are ignored.
+Числовые подстановки вроде `[5]`, `[6]` (ссылки на сноски в официальных формах) игнорируются.
 
-### Text content (`-WithText`)
+### Текстовое содержимое (`-WithText`)
 
-Shows static text (labels, headers) and template strings with `[Param]` placeholders:
+Показывает статический текст (надписи, заголовки) и шаблонные строки с подстановками `[Параметр]`:
 
 ```
 --- Text content ---
@@ -146,21 +146,21 @@ Shows static text (labels, headers) and template strings with `[Param]` placehol
     Templates: "Инв № [ИнвентарныйНомер]"
 ```
 
-- **Text** — static labels (fillType=Text). Useful to understand column meaning.
-- **Templates** — text with `[ParamName]` substitutions (fillType=Template). The param inside `[]` is filled programmatically.
+- **Text** — статические надписи (fillType=Text). Полезно для понимания назначения колонок.
+- **Templates** — текст с подстановками `[ИмяПараметра]` (fillType=Template). Параметр внутри `[]` заполняется программно.
 
-## When to Use
+## Когда использовать
 
-- **Before writing fill code**: run `/mxl-info` to understand area names and parameter lists, then write BSL output code following the top-to-bottom area order
-- **With `-WithText`**: when you need context — column headers, labels next to parameters, template patterns
-- **With `-Format json`**: when you need structured data for programmatic processing
-- **For existing templates**: analyze uploaded or configuration templates without reading raw XML
+- **Перед написанием кода заполнения**: запустить `/mxl-info` чтобы понять имена областей и списки параметров, затем писать BSL-код вывода, следуя порядку областей сверху вниз
+- **С `-WithText`**: когда нужен контекст — заголовки колонок, надписи рядом с параметрами, шаблонные строки
+- **С `-Format json`**: когда нужны структурированные данные для программной обработки
+- **Для существующих макетов**: анализ загруженных или конфигурационных макетов без чтения сырого XML
 
-## Truncation Protection
+## Защита от переполнения
 
-Output is limited to 150 lines by default. If exceeded:
+Вывод ограничен 150 строками по умолчанию. При превышении:
 ```
 [TRUNCATED] Shown 150 of 220 lines. Use -Offset 150 to continue.
 ```
 
-Use `-Offset N` and `-Limit N` to paginate through large outputs.
+Используйте `-Offset N` и `-Limit N` для постраничного просмотра.
