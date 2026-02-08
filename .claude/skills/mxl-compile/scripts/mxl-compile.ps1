@@ -285,6 +285,9 @@ function Register-CellFormat {
 # Pre-register all formats from areas
 foreach ($area in $def.areas) {
 	foreach ($row in $area.rows) {
+		# Skip empty row placeholder
+		if ($row.empty) { continue }
+
 		# Row height format
 		if ($row.height) {
 			$hKey = Get-FormatKey -height ([int]$row.height)
@@ -362,6 +365,21 @@ foreach ($area in $def.areas) {
 	$localRow = 0
 
 	foreach ($row in $area.rows) {
+		# Empty row placeholder: emit N empty rows
+		if ($row.empty) {
+			$count = [int]$row.empty
+			for ($ei = 0; $ei -lt $count; $ei++) {
+				X "`t<rowsItem>"
+				X "`t`t<index>$globalRow</index>"
+				X "`t`t<row>"
+				X "`t`t`t<empty>true</empty>"
+				X "`t`t</row>"
+				X "`t</rowsItem>"
+				$globalRow++; $localRow++
+			}
+			continue
+		}
+
 		# Build set of columns occupied by rowspans from previous rows
 		$rowspanOccupied = @{}  # 1-based col -> $true
 		foreach ($rs in $activeRowspans) {

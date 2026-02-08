@@ -520,9 +520,29 @@ foreach ($area in $namedAreas) {
 		$areaRows += $dslRow
 	}
 
+	# Compress consecutive empty rows ({}) into { empty = N }
+	$compressedRows = @()
+	$emptyRun = 0
+	foreach ($r in $areaRows) {
+		if ($r.Count -eq 0) {
+			$emptyRun++
+		} else {
+			if ($emptyRun -gt 0) {
+				if ($emptyRun -eq 1) { $compressedRows += [ordered]@{} }
+				else { $compressedRows += [ordered]@{ empty = $emptyRun } }
+				$emptyRun = 0
+			}
+			$compressedRows += $r
+		}
+	}
+	if ($emptyRun -gt 0) {
+		if ($emptyRun -eq 1) { $compressedRows += [ordered]@{} }
+		else { $compressedRows += [ordered]@{ empty = $emptyRun } }
+	}
+
 	$dslAreas += [ordered]@{
 		name = $area.Name
-		rows = [array]$areaRows
+		rows = [array]$compressedRows
 	}
 }
 
@@ -577,6 +597,18 @@ if ($compressedWidths.Count -gt 0) { $result["columnWidths"] = $compressedWidths
 # Remove empty "default" style
 if ($styleDefs.Contains("default") -and $styleDefs["default"].Count -eq 0) {
 	$styleDefs.Remove("default")
+}
+
+# Remove unused styles
+$usedStyles = @{}
+foreach ($a in $dslAreas) {
+	foreach ($r in $a.rows) {
+		if ($r.rowStyle) { $usedStyles[$r.rowStyle] = $true }
+		if ($r.cells) { foreach ($c in $r.cells) { if ($c.style) { $usedStyles[$c.style] = $true } } }
+	}
+}
+$toRemove = @($styleDefs.Keys | Where-Object { -not $usedStyles.ContainsKey($_) })
+foreach ($s in $toRemove) { $styleDefs.Remove($s)
 }
 
 $result["fonts"] = $fontsOut
