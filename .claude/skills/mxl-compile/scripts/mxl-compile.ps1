@@ -123,7 +123,12 @@ function Parse-ColumnSpec {
 $colWidthMap = @{}
 if ($def.columnWidths) {
 	foreach ($prop in $def.columnWidths.PSObject.Properties) {
-		$width = [int]$prop.Value
+		$val = "$($prop.Value)"
+		if ($val -match '^([0-9.]+)x$') {
+			$width = [int][math]::Round([double]$Matches[1] * $defaultWidth)
+		} else {
+			$width = [int]$val
+		}
 		$columns = Parse-ColumnSpec $prop.Name
 		foreach ($c in $columns) {
 			$colWidthMap[$c] = $width
