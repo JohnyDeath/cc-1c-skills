@@ -118,6 +118,22 @@ In BSL:
 Область.Параметры.РасшифровкаТовар = СтрокаТЧ.Номенклатура; // detailParameter
 ```
 
+### Template parameters (`[tpl]` suffix)
+
+Some parameters are embedded in template text: `"Инв № [ИнвентарныйНомер]"`. These are filled via fillType=Template, not fillType=Parameter. The script always extracts them and marks with `[tpl]`:
+
+```
+  НумерацияЛистов: Номер [tpl], Дата [tpl], НомерЛиста [tpl]
+```
+
+In BSL, template parameters are filled the same way as regular ones:
+```bsl
+Область.Параметры.Номер = НомерДокумента;
+Область.Параметры.Дата = ДатаДокумента;
+```
+
+Numeric-only placeholders like `[5]`, `[6]` (footnote references in legal forms) are ignored.
+
 ### Text content (`-WithText`)
 
 Shows static text (labels, headers) and template strings with `[Param]` placeholders:

@@ -132,14 +132,26 @@ function Get-CellData {
 			$results += $entry
 		}
 
-		if ($includeText -and $tl) {
+		if ($tl) {
 			$content = $tl.SelectSingleNode("v8:item/v8:content", $ns)
 			if ($content -and $content.InnerText) {
 				$text = $content.InnerText
-				# Detect if this is a Template (has [...] placeholders)
-				if ($text -match '\[.+\]') {
-					$results += @{ Kind = "Template"; Value = $text }
-				} else {
+				$isTemplate = $text -match '\[.+\]'
+
+				if ($isTemplate) {
+					# Always extract parameter names from [Param] placeholders
+					# Skip numeric-only like [5] — these are footnote refs in legal forms
+					foreach ($m in [regex]::Matches($text, '\[([^\]]+)\]')) {
+						$val = $m.Groups[1].Value
+						if ($val -notmatch '^\d+$') {
+							$results += @{ Kind = "TemplateParam"; Value = $val }
+						}
+					}
+					# Full template text only with -WithText
+					if ($includeText) {
+						$results += @{ Kind = "Template"; Value = $text }
+					}
+				} elseif ($includeText) {
 					$results += @{ Kind = "Text"; Value = $text }
 				}
 			}
@@ -175,8 +187,9 @@ function Get-AreaCellData {
 						$params += $c.Value
 						if ($c.Detail) { $details += "$($c.Value)->$($c.Detail)" }
 					}
-					"Text"      { $texts += $c.Value }
-					"Template"  { $templates += $c.Value }
+					"TemplateParam" { $params += "$($c.Value) [tpl]" }
+					"Text"          { $texts += $c.Value }
+					"Template"      { $templates += $c.Value }
 				}
 			}
 		}
@@ -229,6 +242,7 @@ foreach ($r in $rowMap.Keys | Sort-Object) {
 					$outsideParams += $c.Value
 					if ($c.Detail) { $outsideDetails += "$($c.Value)->$($c.Detail)" }
 				}
+				"TemplateParam" { $outsideParams += "$($c.Value) [tpl]" }
 				"Text"      { $outsideTexts += $c.Value }
 				"Template"  { $outsideTemplates += $c.Value }
 			}
