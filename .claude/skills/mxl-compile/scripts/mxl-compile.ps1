@@ -182,7 +182,7 @@ function Resolve-Style {
 			if ($style.wrap -eq $true) { $wrap = $true }
 
 			# Number format
-			if ($style.numberFormat) { $nf = $style.numberFormat }
+			if ($style.format) { $nf = $style.format }
 		}
 	}
 

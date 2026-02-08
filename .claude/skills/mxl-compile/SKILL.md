@@ -142,7 +142,7 @@ powershell.exe -NoProfile -File .claude/skills/mxl-compile/scripts/mxl-compile.p
 | `border` | — | Стороны рамки: `all`, `top`, `bottom`, `left`, `right`, `none`. Через запятую: `"top,bottom"` |
 | `borderWidth` | `"thin"` | Толщина рамки: `thin` (1px) или `thick` (2px) |
 | `wrap` | `false` | Перенос текста |
-| `numberFormat` | — | Формат числа 1С, например `"ЧЦ=15; ЧДЦ=2"` |
+| `format` | — | Формат данных 1С: `"ЧЦ=15; ЧДЦ=2"`, `"ДФ=dd.MM.yyyy"` и т.д. |
 
 ### Области (`areas[]`)
 
