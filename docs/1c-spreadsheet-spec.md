@@ -1,0 +1,337 @@
+# Спецификация XML-формата табличного документа (SpreadsheetDocument)
+
+Формат файла `Template.xml` для макетов типа `SpreadsheetDocument` (табличный документ / MXL).
+
+## Namespace
+
+```xml
+<document xmlns="http://v8.1c.ru/8.2/data/spreadsheet"
+          xmlns:style="http://v8.1c.ru/8.1/data/ui/style"
+          xmlns:v8="http://v8.1c.ru/8.1/data/core"
+          xmlns:v8ui="http://v8.1c.ru/8.1/data/ui"
+          xmlns:xs="http://www.w3.org/2001/XMLSchema"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+```
+
+## Структура документа
+
+Элементы внутри `<document>` идут в фиксированном порядке:
+
+```
+<document>
+    <languageSettings>          — языковые настройки
+    <columns>                   — определения колонок
+    <rowsItem> ...              — строки с данными (повторяются)
+    <drawing> ...               — рисунки (опционально, повторяются)
+    <templateMode>true          — признак макета
+    <defaultFormatIndex>        — индекс формата по умолчанию
+    <height>                    — общее количество строк
+    <vgRows>                    — видимых строк (обычно = height)
+    <merge> ...                 — объединения ячеек (повторяются)
+    <namedItem> ...             — именованные области (повторяются)
+    <line> ...                  — стили линий (повторяются)
+    <font> ...                  — шрифты (опционально, повторяются)
+    <format> ...                — форматы (повторяются)
+    <picture> ...               — ресурсы картинок (опционально)
+</document>
+```
+
+## Индексация
+
+Все палитры (линии, шрифты, форматы) — **плоские массивы**, на элементы которых ссылаются по индексу.
+
+| Палитра   | Индексация | Индекс 0 означает                   |
+|-----------|------------|--------------------------------------|
+| `<line>`  | 0-based    | Первый элемент `<line>`              |
+| `<font>`  | 0-based    | Первый элемент `<font>`              |
+| `<format>`| **1-based**| 0 = «формат по умолчанию» (не задан) |
+
+Формат с индексом N — это N-й элемент `<format>` в документе (считая от 1).
+
+## Языковые настройки
+
+```xml
+<languageSettings>
+    <currentLanguage>ru</currentLanguage>
+    <defaultLanguage>ru</defaultLanguage>
+    <languageInfo>
+        <id>ru</id>
+        <code>Русский</code>
+        <description>Русский</description>
+    </languageInfo>
+</languageSettings>
+```
+
+## Колонки
+
+```xml
+<columns>
+    <size>33</size>              <!-- общее количество колонок -->
+    <columnsItem>
+        <index>1</index>         <!-- индекс колонки (0-based) -->
+        <column>
+            <formatIndex>1</formatIndex>  <!-- ссылка на format[] -->
+        </column>
+    </columnsItem>
+    ...
+</columns>
+```
+
+Перечисляются только колонки с нестандартной шириной. Формат колонки определяет ширину через свойство `<width>` в палитре форматов.
+
+## Строки и ячейки
+
+### Строка
+
+```xml
+<rowsItem>
+    <index>3</index>               <!-- индекс строки (0-based) -->
+    <indexTo>5</indexTo>            <!-- опц.: диапазон [index..indexTo] с одинаковым содержимым -->
+    <row>
+        <formatIndex>5</formatIndex>  <!-- опц.: формат строки (определяет высоту) -->
+        <empty>true</empty>           <!-- опц.: пустая строка -->
+        <c>...</c>                    <!-- ячейки (повторяются) -->
+    </row>
+</rowsItem>
+```
+
+Строки с одинаковым содержимым объединяются через `<indexTo>`.
+
+### Ячейка
+
+Ячейки внутри `<row>` — элементы `<c>` (cell group), каждый содержит `<c>` (cell content):
+
+```xml
+<c>                                <!-- cell group -->
+    <i>6</i>                       <!-- индекс колонки (0-based), опционален -->
+    <c>                            <!-- cell content -->
+        <f>9</f>                   <!-- индекс формата -->
+        <parameter>Имя</parameter>           <!-- параметр для заполнения -->
+        <detailParameter>Расш</detailParameter>  <!-- параметр расшифровки -->
+        <tl>                       <!-- текст (локализованная строка) -->
+            <v8:item>
+                <v8:lang>ru</v8:lang>
+                <v8:content>Итого:</v8:content>
+            </v8:item>
+        </tl>
+    </c>
+</c>
+```
+
+**Правила позиционирования `<i>`:**
+- Если `<i>` указан — ячейка в этой колонке
+- Если `<i>` не указан — колонка = предыдущая + 1
+- Первая ячейка без `<i>` идёт в колонку 0
+
+### Типы заполнения ячеек
+
+Тип заполнения определяется свойством `fillType` в формате ячейки:
+
+| fillType    | Данные ячейки                  | Описание                               |
+|-------------|-------------------------------|----------------------------------------|
+| `Parameter` | `<parameter>Имя</parameter>`  | Значение подставляется программно      |
+| `Template`  | `<tl>Текст [Параметр]</tl>`  | Шаблон — `[Имя]` заменяется на значение |
+| `Text`      | `<tl>Текст</tl>`             | Статический текст                      |
+| *(нет)*     | —                             | Пустая ячейка или ячейка с форматированием |
+
+`<detailParameter>` — имя параметра расшифровки (для навигации при клике на ячейку).
+
+## Рисунки
+
+```xml
+<drawing>
+    <drawingType>Picture</drawingType>
+    <id>1</id>
+    <formatIndex>11</formatIndex>
+    <beginRow>3</beginRow>
+    <beginRowOffset>6</beginRowOffset>
+    <endRow>4</endRow>
+    <endRowOffset>33</endRowOffset>
+    <beginColumn>2</beginColumn>
+    <beginColumnOffset>0</beginColumnOffset>
+    <endColumn>4</endColumn>
+    <endColumnOffset>183</endColumnOffset>
+    <autoSize>false</autoSize>
+    <pictureSize>Proportionally</pictureSize>
+    <zOrder>1</zOrder>
+    <pictureIndex>1</pictureIndex>
+</drawing>
+```
+
+Позиция задаётся через начальную/конечную строку и колонку + смещения в пикселях. `pictureIndex` ссылается на ресурс из палитры `<picture>`.
+
+## Объединения ячеек
+
+```xml
+<merge>
+    <r>3</r>      <!-- строка (0-based) -->
+    <c>1</c>      <!-- колонка (0-based) -->
+    <h>1</h>      <!-- доп. строк (опц., по умолчанию 0 = одна строка) -->
+    <w>30</w>     <!-- доп. колонок -->
+</merge>
+```
+
+Размер объединения: `(h + 1)` строк × `(w + 1)` колонок. Если `<h>` не указан — объединение в пределах одной строки.
+
+## Именованные области
+
+Именованные области — аналог «имён» в табличном документе 1С. Используются для программного вывода секций.
+
+Получение области:
+```bsl
+// Горизонтальная область (диапазон строк)
+Область = Макет.ПолучитьОбласть("Заголовок");
+
+// Пересечение горизонтальной и вертикальной областей
+Область = Макет.ПолучитьОбласть("ВысотаЭтикетки|ШиринаЭтикетки");
+```
+
+Пересечение через `|` типично для этикеток и ценников, где нужна область фиксированного размера (высота × ширина).
+
+### Тип Rows — горизонтальная область
+
+```xml
+<namedItem xsi:type="NamedItemCells">
+    <name>Заголовок</name>
+    <area>
+        <type>Rows</type>
+        <beginRow>1</beginRow>        <!-- 0-based -->
+        <endRow>4</endRow>
+        <beginColumn>-1</beginColumn> <!-- -1 = все колонки -->
+        <endColumn>-1</endColumn>
+    </area>
+</namedItem>
+```
+
+### Тип Columns — вертикальная область
+
+```xml
+<namedItem xsi:type="NamedItemCells">
+    <name>ШиринаЭтикетки</name>
+    <area>
+        <type>Columns</type>
+        <beginRow>-1</beginRow>       <!-- -1 = все строки -->
+        <endRow>-1</endRow>
+        <beginColumn>1</beginColumn>  <!-- 0-based -->
+        <endColumn>5</endColumn>
+    </area>
+</namedItem>
+```
+
+### Тип Drawing — именованный рисунок
+
+```xml
+<namedItem xsi:type="NamedItemDrawing">
+    <name>Штрихкод</name>
+    <drawingID>1</drawingID>          <!-- ссылка на drawing/id -->
+</namedItem>
+```
+
+## Стили линий
+
+Палитра линий для границ ячеек и рисунков. Индексация 0-based.
+
+```xml
+<!-- Для границ ячеек -->
+<line width="2" gap="false">
+    <v8ui:style xsi:type="v8ui:SpreadsheetDocumentCellLineType">Solid</v8ui:style>
+</line>
+
+<!-- Для границ рисунков -->
+<line width="1" gap="false">
+    <v8ui:style xsi:type="v8ui:SpreadsheetDocumentDrawingLineType">None</v8ui:style>
+</line>
+```
+
+| xsi:type                                | Значения    |
+|-----------------------------------------|-------------|
+| `v8ui:SpreadsheetDocumentCellLineType`  | Solid, None |
+| `v8ui:SpreadsheetDocumentDrawingLineType` | Solid, None |
+
+Атрибут `width` — толщина линии (1 = тонкая, 2 = толстая).
+
+## Шрифты
+
+Палитра шрифтов. Индексация 0-based.
+
+```xml
+<!-- Абсолютный шрифт -->
+<font faceName="Arial" height="14" bold="true" italic="false"
+      underline="false" strikeout="false" kind="Absolute" scale="100"/>
+
+<!-- Ссылка на стиль -->
+<font ref="style:TextFont" kind="StyleItem"/>
+```
+
+## Форматы
+
+Палитра форматов — центральный элемент. **Индексация 1-based** (индекс 0 = формат не задан).
+
+```xml
+<format>
+    <font>0</font>                          <!-- индекс шрифта (0-based) -->
+    <leftBorder>0</leftBorder>              <!-- индекс линии левой границы -->
+    <topBorder>1</topBorder>                <!-- индекс линии верхней границы -->
+    <rightBorder>0</rightBorder>            <!-- индекс линии правой границы -->
+    <bottomBorder>1</bottomBorder>          <!-- индекс линии нижней границы -->
+    <width>24</width>                       <!-- ширина (для колонок) -->
+    <height>84</height>                     <!-- высота (для строк) -->
+    <horizontalAlignment>Center</horizontalAlignment>   <!-- Left | Center | Right -->
+    <verticalAlignment>Center</verticalAlignment>       <!-- Top | Center -->
+    <textPlacement>Wrap</textPlacement>     <!-- Wrap = перенос по словам -->
+    <fillType>Parameter</fillType>          <!-- Parameter | Template | Text -->
+    <format>                                <!-- строка формата (опционально) -->
+        <v8:item>
+            <v8:lang>ru</v8:lang>
+            <v8:content>ЧЦ=15; ЧДЦ=2</v8:content>
+        </v8:item>
+    </format>
+    <drawingBorder>1</drawingBorder>        <!-- индекс линии для рисунка -->
+</format>
+```
+
+Все свойства опциональны. Формат может содержать только `<width>` (для колонки) или только `<height>` (для строки).
+
+### Связь формата с контекстом
+
+| Контекст         | Ссылка             | Значимые свойства формата |
+|------------------|--------------------|--------------------------|
+| Колонка          | `<formatIndex>`    | `width`                  |
+| Строка           | `<formatIndex>`    | `height`                 |
+| Ячейка           | `<f>`              | Все остальные             |
+| Рисунок          | `<formatIndex>`    | `drawingBorder`          |
+| По умолчанию     | `<defaultFormatIndex>` | `width`              |
+
+## Ресурсы картинок
+
+```xml
+<picture>
+    <index>0</index>
+    <picture ref="v8ui:Штрихкод"/>    <!-- ссылка на предопределённую картинку -->
+</picture>
+```
+
+## Типичная структура макета печатной формы
+
+Печатная форма обычно состоит из именованных горизонтальных областей:
+
+```
+Заголовок      — шапка документа (название, номер, дата)
+Поставщик      — реквизиты поставщика
+Покупатель     — реквизиты покупателя
+ШапкаТаблицы   — заголовок таблицы товаров
+Строка         — строка товара (выводится в цикле)
+Итого          — итоговая строка
+СуммаПрописью  — сумма прописью
+Подписи        — блок подписей
+```
+
+Каждая область — диапазон строк, получаемый через `ПолучитьОбласть("Имя")` и выводимый через `Вывести()`.
+
+Параметры в ячейках (`<parameter>`) заполняются программно:
+```bsl
+Область = Макет.ПолучитьОбласть("Строка");
+Область.Параметры.НомерСтроки = НомерСтроки;
+Область.Параметры.Товар = СтрокаТЧ.Номенклатура;
+ТабДок.Вывести(Область);
+```
