@@ -63,36 +63,36 @@ $script:nextElemId = 0
 $script:nextAttrId = 0
 $script:nextCmdId = 0
 
-function Scan-ElementIds($node) {
-	foreach ($child in $node.ChildNodes) {
-		if ($child.NodeType -ne 'Element') { continue }
-		$id = $child.GetAttribute("id")
-		if ($id -and $id -ne "" -and $id -ne "-1") {
-			try {
-				$intId = [int]$id
-				if ($intId -gt $script:nextElemId) { $script:nextElemId = $intId }
-			} catch {}
+# Scan ALL element IDs via XPath (includes companions like ExtendedTooltip, ContextMenu)
+$rootCI = $root.SelectSingleNode("f:ChildItems", $nsMgr)
+if ($rootCI) {
+	foreach ($elem in $rootCI.SelectNodes(".//*[@id]")) {
+		$id = $elem.GetAttribute("id")
+		if ($id -and $id -ne "-1") {
+			try { $intId = [int]$id; if ($intId -gt $script:nextElemId) { $script:nextElemId = $intId } } catch {}
 		}
-		$ci = $child.SelectSingleNode("f:ChildItems", $nsMgr)
-		if ($ci) { Scan-ElementIds $ci }
+	}
+}
+$acb = $root.SelectSingleNode("f:AutoCommandBar", $nsMgr)
+if ($acb) {
+	$id = $acb.GetAttribute("id")
+	if ($id -and $id -ne "-1") {
+		try { $intId = [int]$id; if ($intId -gt $script:nextElemId) { $script:nextElemId = $intId } } catch {}
 	}
 }
 
-$rootCI = $root.SelectSingleNode("f:ChildItems", $nsMgr)
-if ($rootCI) { Scan-ElementIds $rootCI }
-
-# Also scan AutoCommandBar children
-$acb = $root.SelectSingleNode("f:AutoCommandBar", $nsMgr)
-if ($acb) {
-	$acbCI = $acb.SelectSingleNode("f:ChildItems", $nsMgr)
-	if ($acbCI) { Scan-ElementIds $acbCI }
-}
-
-# Scan attribute IDs
+# Scan attribute IDs (including column IDs — same pool)
 foreach ($attr in $root.SelectNodes("f:Attributes/f:Attribute", $nsMgr)) {
 	$id = $attr.GetAttribute("id")
 	if ($id) {
 		try { $intId = [int]$id; if ($intId -gt $script:nextAttrId) { $script:nextAttrId = $intId } } catch {}
+	}
+	# Column IDs are in the same pool as attribute IDs
+	foreach ($col in $attr.SelectNodes("f:Columns/f:Column", $nsMgr)) {
+		$colId = $col.GetAttribute("id")
+		if ($colId) {
+			try { $intColId = [int]$colId; if ($intColId -gt $script:nextAttrId) { $script:nextAttrId = $intColId } } catch {}
+		}
 	}
 }
 
