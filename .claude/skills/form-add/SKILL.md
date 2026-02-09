@@ -1,127 +1,91 @@
 ---
 name: form-add
-description: Добавление элементов, реквизитов и команд в существующую управляемую форму 1С (Form.xml)
-argument-hint: <FormPath> <JsonPath>
+description: Добавить управляемую форму к объекту конфигурации 1С
+argument-hint: <ObjectPath> <FormName> [Purpose] [--set-default]
 allowed-tools:
   - Bash
   - Read
   - Write
+  - Edit
   - Glob
+  - Grep
 ---
 
-# /form-add — Добавление в форму
+# /form-add — Добавление формы к объекту конфигурации
 
-Добавляет элементы, реквизиты и/или команды в существующий Form.xml. Автоматически выделяет ID из правильного пула, генерирует companion-элементы (ContextMenu, ExtendedTooltip, и др.) и обработчики событий.
+Создаёт управляемую форму (metadata XML + Form.xml + Module.bsl) и регистрирует её в корневом XML объекта конфигурации (Document, Catalog, InformationRegister и др.).
 
-## Использование
+## Usage
 
 ```
-/form-add <FormPath> <JsonPath>
+/form-add <ObjectPath> <FormName> [Purpose] [Synonym] [--set-default]
 ```
 
-## Параметры
-
-| Параметр  | Обязательный | Описание                         |
-|-----------|:------------:|----------------------------------|
-| FormPath  | да           | Путь к существующему Form.xml    |
-| JsonPath  | да           | Путь к JSON с описанием добавлений |
+| Параметр    | Обязательный | По умолчанию | Описание                                     |
+|-------------|:------------:|--------------|----------------------------------------------|
+| ObjectPath  | да           | —            | Путь к XML-файлу объекта (Documents/Док.xml)  |
+| FormName    | да           | —            | Имя формы (ФормаДокумента)                    |
+| Purpose     | нет          | Object       | Назначение: Object, List, Choice, Record      |
+| Synonym     | нет          | = FormName   | Синоним формы                                 |
+| --set-default | нет        | авто         | Установить как форму по умолчанию             |
 
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\form-add\scripts\form-add.ps1 -FormPath "<путь>" -JsonPath "<путь>"
+powershell.exe -NoProfile -File .claude\skills\form-add\scripts\form-add.ps1 -ObjectPath "<ObjectPath>" -FormName "<FormName>" [-Purpose "<Purpose>"] [-Synonym "<Synonym>"] [-SetDefault]
 ```
 
-## JSON формат
+## Purpose — назначение формы
 
-```json
-{
-  "into": "ГруппаШапка",
-  "after": "Контрагент",
-  "elements": [
-    { "input": "Склад", "path": "Объект.Склад", "on": ["OnChange"] }
-  ],
-  "attributes": [
-    { "name": "СуммаИтого", "type": "decimal(15,2)" }
-  ],
-  "commands": [
-    { "name": "Рассчитать", "action": "РассчитатьОбработка" }
-  ]
-}
-```
+| Purpose | Допустимые типы объектов | Основной реквизит | DefaultForm-свойство |
+|---------|-------------------------|-------------------|---------------------|
+| Object  | Document, Catalog, DataProcessor, Report, ChartOf*, ExchangePlan, BusinessProcess, Task | Объект (тип: *Object.Имя) | DefaultObjectForm (DefaultForm для DataProcessor/Report) |
+| List    | Все кроме DataProcessor | Список (DynamicList) | DefaultListForm |
+| Choice  | Document, Catalog, ChartOf*, ExchangePlan, BusinessProcess, Task | Список (DynamicList) | DefaultChoiceForm |
+| Record  | InformationRegister | Запись (InformationRegisterRecordManager) | DefaultRecordForm |
 
-### Позиционирование элементов
-
-| Ключ | По умолчанию | Описание |
-|------|-------------|----------|
-| `into` | корневой ChildItems | Имя группы/таблицы/страницы, куда вставлять |
-| `after` | в конец | Имя элемента, после которого вставлять |
-
-### Типы элементов
-
-Те же DSL-ключи, что в `/form-compile`:
-
-| Ключ | XML тег | Companions |
-|------|---------|------------|
-| `input` | InputField | ContextMenu, ExtendedTooltip |
-| `check` | CheckBoxField | ContextMenu, ExtendedTooltip |
-| `label` | LabelDecoration | ContextMenu, ExtendedTooltip |
-| `labelField` | LabelField | ContextMenu, ExtendedTooltip |
-| `group` | UsualGroup | ExtendedTooltip |
-| `table` | Table | ContextMenu, AutoCommandBar, Search*, ViewStatus* |
-| `pages` | Pages | ExtendedTooltip |
-| `page` | Page | ExtendedTooltip |
-| `button` | Button | ExtendedTooltip |
-
-Группы и таблицы поддерживают `children`/`columns` для вложенных элементов.
-
-### Кнопки: command и stdCommand
-
-- `"command": "ИмяКоманды"` → `Form.Command.ИмяКоманды`
-- `"stdCommand": "Close"` → `Form.StandardCommand.Close`
-- `"stdCommand": "Товары.Add"` → `Form.Item.Товары.StandardCommand.Add` (стандартная команда элемента)
-
-### Допустимые события (`on`)
-
-Компилятор предупреждает об ошибках в именах событий. Основные:
-
-- **input**: `OnChange`, `StartChoice`, `ChoiceProcessing`, `Clearing`, `AutoComplete`, `TextEditEnd`
-- **check**: `OnChange`
-- **table**: `OnStartEdit`, `OnEditEnd`, `OnChange`, `Selection`, `BeforeAddRow`, `BeforeDeleteRow`, `OnActivateRow`
-- **label/picture**: `Click`, `URLProcessing`
-- **pages**: `OnCurrentPageChange`
-- **button**: `Click`
-
-### Система типов (для attributes)
-
-`string`, `string(100)`, `decimal(15,2)`, `boolean`, `date`, `dateTime`, `CatalogRef.XXX`, `DocumentObject.XXX`, `ValueTable`, `DynamicList`, `Type1 | Type2` (составной).
-
-## Вывод
+## Что создаётся
 
 ```
-=== form-add: Форма ===
-
-Added elements (into ГруппаШапка, after Контрагент):
-  + [Input] Склад -> Объект.Склад {OnChange}
-
-Added attributes:
-  + СуммаИтого: decimal(15,2) (id=12)
-
----
-Total: 1 element(s) (+2 companions), 1 attribute(s)
-Run /form-validate to verify.
+<ObjectDir>/Forms/
+├── <FormName>.xml                    # Метаданные формы (UUID)
+└── <FormName>/
+    └── Ext/
+        ├── Form.xml                  # Описание формы (logform namespace)
+        └── Form/
+            └── Module.bsl           # BSL-модуль с 5 регионами + ПриСозданииНаСервере
 ```
 
-## Когда использовать
+## Что модифицируется
 
-- **После `/form-compile`**: добавить элементы, которые не были в исходном JSON
-- **Модификация существующих форм**: добавить поле, реквизит или команду в форму из конфигурации
-- **Пакетное добавление**: один JSON может содержать элементы + реквизиты + команды
+- `<ObjectPath>` — добавляется `<Form>` в `ChildObjects` (перед `<Template>` или `<TabularSection>`), обновляется Default*Form (автоматически если пустое, или явно при `--set-default`)
+
+## Поддерживаемые типы объектов
+
+Document, Catalog, DataProcessor, Report, InformationRegister, ChartOfAccounts, ChartOfCharacteristicTypes, ExchangePlan, BusinessProcess, Task
+
+## Примеры
+
+```
+# Форма документа
+/form-add Documents/АвансовыйОтчет.xml ФормаДокумента --purpose Object
+
+# Форма списка каталога
+/form-add Catalogs/Контрагенты.xml ФормаСписка --purpose List
+
+# Форма записи регистра сведений
+/form-add InformationRegisters/КурсыВалют.xml ФормаЗаписи --purpose Record
+
+# Форма выбора с синонимом
+/form-add Catalogs/Номенклатура.xml ФормаВыбора --purpose Choice --synonym "Выбор номенклатуры"
+
+# Установить как форму по умолчанию
+/form-add Documents/Заказ.xml ФормаДокументаНовая --purpose Object --set-default
+```
 
 ## Workflow
 
-1. `/form-info` — посмотреть текущую структуру формы
-2. Создать JSON с описанием добавлений
-3. `/form-add` — добавить в форму
-4. `/form-validate` — проверить корректность
-5. `/form-info` — убедиться что добавилось правильно
+1. `/form-add` — создать каркас формы
+2. `/form-compile` или `/form-edit` — наполнить Form.xml элементами
+3. `/form-validate` — проверить корректность
+4. `/form-info` — проанализировать результат
