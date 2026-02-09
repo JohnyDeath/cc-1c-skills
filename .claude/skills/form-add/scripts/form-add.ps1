@@ -233,9 +233,37 @@ function Get-ElementName {
 	return "$($el.$typeKey)"
 }
 
+$script:knownEvents = @{
+	"input"     = @("OnChange","StartChoice","ChoiceProcessing","AutoComplete","TextEditEnd","Clearing","Creating","EditTextChange")
+	"check"     = @("OnChange")
+	"label"     = @("Click","URLProcessing")
+	"labelField"= @("OnChange","StartChoice","ChoiceProcessing","Click","URLProcessing","Clearing")
+	"table"     = @("Selection","BeforeAddRow","AfterDeleteRow","BeforeDeleteRow","OnActivateRow","OnEditEnd","OnStartEdit","BeforeRowChange","BeforeEditEnd","ValueChoice","OnActivateCell","OnActivateField","Drag","DragStart","DragCheck","DragEnd","OnGetDataAtServer","BeforeLoadUserSettingsAtServer","OnUpdateUserSettingSetAtServer","OnChange")
+	"pages"     = @("OnCurrentPageChange")
+	"page"      = @("OnCurrentPageChange")
+	"button"    = @("Click")
+	"picField"  = @("OnChange","StartChoice","ChoiceProcessing","Click","Clearing")
+	"calendar"  = @("OnChange","OnActivate")
+	"picture"   = @("Click")
+	"cmdBar"    = @()
+	"popup"     = @()
+	"group"     = @()
+}
+
 function Emit-Events {
-	param($el, [string]$elementName, [string]$indent)
+	param($el, [string]$elementName, [string]$indent, [string]$typeKey)
 	if (-not $el.on) { return }
+
+	# Validate event names
+	if ($typeKey -and $script:knownEvents.ContainsKey($typeKey)) {
+		$allowed = $script:knownEvents[$typeKey]
+		foreach ($evt in $el.on) {
+			if ($allowed.Count -gt 0 -and $allowed -notcontains "$evt") {
+				Write-Host "[WARN] Unknown event '$evt' for $typeKey '$elementName'. Known: $($allowed -join ', ')"
+			}
+		}
+	}
+
 	X "$indent<Events>"
 	foreach ($evt in $el.on) {
 		$evtName = "$evt"
@@ -323,7 +351,7 @@ function Emit-Input {
 	if ($el.inputHint) { Emit-MLText -tag "InputHint" -text "$($el.inputHint)" -indent $inner }
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "input"
 	X "$indent</InputField>"
 }
 
@@ -337,7 +365,7 @@ function Emit-Check {
 	if ($el.titleLocation) { X "$inner<TitleLocation>$($el.titleLocation)</TitleLocation>" }
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "check"
 	X "$indent</CheckBoxField>"
 }
 
@@ -362,7 +390,7 @@ function Emit-Label {
 	if ($el.height) { X "$inner<Height>$($el.height)</Height>" }
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "label"
 	X "$indent</LabelDecoration>"
 }
 
@@ -376,7 +404,7 @@ function Emit-LabelField {
 	if ($el.hyperlink -eq $true) { X "$inner<Hyperlink>true</Hyperlink>" }
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "labelField"
 	X "$indent</LabelField>"
 }
 
@@ -405,7 +433,7 @@ function Emit-Table {
 		foreach ($col in $el.columns) { Emit-Element -el $col -indent "$inner`t" }
 		X "$inner</ChildItems>"
 	}
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "table"
 	X "$indent</Table>"
 }
 
@@ -416,7 +444,7 @@ function Emit-Pages {
 	if ($el.pagesRepresentation) { X "$inner<PagesRepresentation>$($el.pagesRepresentation)</PagesRepresentation>" }
 	Emit-CommonFlags -el $el -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "pages"
 	if ($el.children -and $el.children.Count -gt 0) {
 		X "$inner<ChildItems>"
 		foreach ($child in $el.children) { Emit-Element -el $child -indent "$inner`t" }
@@ -453,7 +481,14 @@ function Emit-Button {
 		X "$inner<Type>$btnType</Type>"
 	}
 	if ($el.command) { X "$inner<CommandName>Form.Command.$($el.command)</CommandName>" }
-	if ($el.stdCommand) { X "$inner<CommandName>Form.StandardCommand.$($el.stdCommand)</CommandName>" }
+	if ($el.stdCommand) {
+		$sc = "$($el.stdCommand)"
+		if ($sc -match '^(.+)\.(.+)$') {
+			X "$inner<CommandName>Form.Item.$($Matches[1]).StandardCommand.$($Matches[2])</CommandName>"
+		} else {
+			X "$inner<CommandName>Form.StandardCommand.$sc</CommandName>"
+		}
+	}
 	Emit-Title -el $el -name $name -indent $inner
 	Emit-CommonFlags -el $el -indent $inner
 	if ($el.defaultButton -eq $true) { X "$inner<DefaultButton>true</DefaultButton>" }
@@ -466,7 +501,7 @@ function Emit-Button {
 	if ($el.representation) { X "$inner<Representation>$($el.representation)</Representation>" }
 	if ($el.locationInCommandBar) { X "$inner<LocationInCommandBar>$($el.locationInCommandBar)</LocationInCommandBar>" }
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "button"
 	X "$indent</Button>"
 }
 
@@ -485,7 +520,7 @@ function Emit-PictureDecoration {
 	if ($el.height) { X "$inner<Height>$($el.height)</Height>" }
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "picture"
 	X "$indent</PictureDecoration>"
 }
 
@@ -500,7 +535,7 @@ function Emit-PictureField {
 	if ($el.height) { X "$inner<Height>$($el.height)</Height>" }
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "picField"
 	X "$indent</PictureField>"
 }
 
@@ -513,7 +548,7 @@ function Emit-Calendar {
 	Emit-CommonFlags -el $el -indent $inner
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "calendar"
 	X "$indent</CalendarField>"
 }
 

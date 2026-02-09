@@ -85,6 +85,26 @@ powershell.exe -NoProfile -File .claude\skills\form-compile\scripts\form-compile
 | `on: [...]` | События с автоименованием обработчиков |
 | `handlers: {...}` | Явное задание имён обработчиков: `{"OnChange": "МоёИмя"}` |
 
+### Допустимые имена событий (`on`)
+
+Компилятор предупреждает о неизвестных событиях. Имена регистрозависимы — используйте точно как указано.
+
+**Форма** (`events`): `OnCreateAtServer`, `OnOpen`, `BeforeClose`, `OnClose`, `NotificationProcessing`, `ChoiceProcessing`, `OnReadAtServer`, `BeforeWriteAtServer`, `OnWriteAtServer`, `AfterWriteAtServer`, `BeforeWrite`, `AfterWrite`, `FillCheckProcessingAtServer`, `BeforeLoadDataFromSettingsAtServer`, `OnLoadDataFromSettingsAtServer`, `ExternalEvent`, `Opening`
+
+**input / picField**: `OnChange`, `StartChoice`, `ChoiceProcessing`, `AutoComplete`, `TextEditEnd`, `Clearing`, `Creating`, `EditTextChange`
+
+**check**: `OnChange`
+
+**table**: `OnStartEdit`, `OnEditEnd`, `OnChange`, `Selection`, `ValueChoice`, `BeforeAddRow`, `BeforeDeleteRow`, `AfterDeleteRow`, `BeforeRowChange`, `BeforeEditEnd`, `OnActivateRow`, `OnActivateCell`, `Drag`, `DragStart`, `DragCheck`, `DragEnd`
+
+**label / picture**: `Click`, `URLProcessing`
+
+**labelField**: `OnChange`, `StartChoice`, `ChoiceProcessing`, `Click`, `URLProcessing`, `Clearing`
+
+**button**: `Click`
+
+**pages**: `OnCurrentPageChange`
+
 ### Поле ввода (input)
 
 | Ключ | Описание | Пример |
@@ -164,7 +184,7 @@ powershell.exe -NoProfile -File .claude\skills\form-compile\scripts\form-compile
 | Ключ | Описание |
 |------|----------|
 | `command` | Имя команды формы → `Form.Command.Имя` |
-| `stdCommand` | Стандартная команда → `Form.StandardCommand.Close` и др. |
+| `stdCommand` | Стандартная команда: `"Close"` → `Form.StandardCommand.Close`; с точкой: `"Товары.Add"` → `Form.Item.Товары.StandardCommand.Add` |
 | `defaultButton: true` | Кнопка по умолчанию |
 | `type` | `"usual"`, `"hyperlink"`, `"commandBar"` |
 | `picture` | Картинка кнопки |
@@ -177,6 +197,23 @@ powershell.exe -NoProfile -File .claude\skills\form-compile\scripts\form-compile
 |------|----------|
 | `autofill: true` | Автозаполнение стандартными командами |
 | `children: [...]` | Кнопки панели |
+
+### Выпадающее меню (popup)
+
+| Ключ | Описание |
+|------|----------|
+| `title` | Заголовок подменю |
+| `children: [...]` | Кнопки подменю |
+
+Используется внутри `cmdBar` для группировки кнопок в подменю:
+```json
+{ "cmdBar": "Панель", "children": [
+  { "popup": "Добавить", "title": "Добавить", "children": [
+    { "button": "ДобавитьСтроку", "stdCommand": "Товары.Add" },
+    { "button": "ДобавитьИзДокумента", "command": "ДобавитьИзДокумента", "title": "Из документа" }
+  ]}
+]}
+```
 
 ### Реквизиты (attributes)
 

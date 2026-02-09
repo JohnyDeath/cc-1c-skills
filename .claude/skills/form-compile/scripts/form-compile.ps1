@@ -229,10 +229,38 @@ function Get-ElementName {
 	return "$($el.$typeKey)"
 }
 
+$script:knownEvents = @{
+	"input"     = @("OnChange","StartChoice","ChoiceProcessing","AutoComplete","TextEditEnd","Clearing","Creating","EditTextChange")
+	"check"     = @("OnChange")
+	"label"     = @("Click","URLProcessing")
+	"labelField"= @("OnChange","StartChoice","ChoiceProcessing","Click","URLProcessing","Clearing")
+	"table"     = @("Selection","BeforeAddRow","AfterDeleteRow","BeforeDeleteRow","OnActivateRow","OnEditEnd","OnStartEdit","BeforeRowChange","BeforeEditEnd","ValueChoice","OnActivateCell","OnActivateField","Drag","DragStart","DragCheck","DragEnd","OnGetDataAtServer","BeforeLoadUserSettingsAtServer","OnUpdateUserSettingSetAtServer","OnChange")
+	"pages"     = @("OnCurrentPageChange")
+	"page"      = @("OnCurrentPageChange")
+	"button"    = @("Click")
+	"picField"  = @("OnChange","StartChoice","ChoiceProcessing","Click","Clearing")
+	"calendar"  = @("OnChange","OnActivate")
+	"picture"   = @("Click")
+	"cmdBar"    = @()
+	"popup"     = @()
+	"group"     = @()
+}
+$script:knownFormEvents = @("OnCreateAtServer","OnOpen","BeforeClose","OnClose","NotificationProcessing","ChoiceProcessing","OnReadAtServer","AfterWriteAtServer","BeforeWriteAtServer","AfterWrite","BeforeWrite","OnWriteAtServer","FillCheckProcessingAtServer","OnLoadDataFromSettingsAtServer","BeforeLoadDataFromSettingsAtServer","OnSaveDataInSettingsAtServer","ExternalEvent","OnReopen","Opening")
+
 function Emit-Events {
-	param($el, [string]$elementName, [string]$indent)
+	param($el, [string]$elementName, [string]$indent, [string]$typeKey)
 
 	if (-not $el.on) { return }
+
+	# Validate event names
+	if ($typeKey -and $script:knownEvents.ContainsKey($typeKey)) {
+		$allowed = $script:knownEvents[$typeKey]
+		foreach ($evt in $el.on) {
+			if ($allowed.Count -gt 0 -and $allowed -notcontains "$evt") {
+				Write-Host "[WARN] Unknown event '$evt' for $typeKey '$elementName'. Known: $($allowed -join ', ')"
+			}
+		}
+	}
 
 	X "$indent<Events>"
 	foreach ($evt in $el.on) {
@@ -454,7 +482,7 @@ function Emit-Input {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "input"
 
 	X "$indent</InputField>"
 }
@@ -478,7 +506,7 @@ function Emit-Check {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "check"
 
 	X "$indent</CheckBoxField>"
 }
@@ -511,7 +539,7 @@ function Emit-Label {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "label"
 
 	X "$indent</LabelDecoration>"
 }
@@ -533,7 +561,7 @@ function Emit-LabelField {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "labelField"
 
 	X "$indent</LabelField>"
 }
@@ -581,7 +609,7 @@ function Emit-Table {
 		X "$inner</ChildItems>"
 	}
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "table"
 
 	X "$indent</Table>"
 }
@@ -601,7 +629,7 @@ function Emit-Pages {
 	# Companion
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "pages"
 
 	# Children (pages)
 	if ($el.children -and $el.children.Count -gt 0) {
@@ -672,7 +700,12 @@ function Emit-Button {
 		X "$inner<CommandName>Form.Command.$($el.command)</CommandName>"
 	}
 	if ($el.stdCommand) {
-		X "$inner<CommandName>Form.StandardCommand.$($el.stdCommand)</CommandName>"
+		$sc = "$($el.stdCommand)"
+		if ($sc -match '^(.+)\.(.+)$') {
+			X "$inner<CommandName>Form.Item.$($Matches[1]).StandardCommand.$($Matches[2])</CommandName>"
+		} else {
+			X "$inner<CommandName>Form.StandardCommand.$sc</CommandName>"
+		}
 	}
 
 	Emit-Title -el $el -name $name -indent $inner
@@ -699,7 +732,7 @@ function Emit-Button {
 	# Companion
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "button"
 
 	X "$indent</Button>"
 }
@@ -729,7 +762,7 @@ function Emit-PictureDecoration {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "picture"
 
 	X "$indent</PictureDecoration>"
 }
@@ -752,7 +785,7 @@ function Emit-PictureField {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "picField"
 
 	X "$indent</PictureField>"
 }
@@ -772,7 +805,7 @@ function Emit-Calendar {
 	Emit-Companion -tag "ContextMenu" -name "${name}КонтекстноеМеню" -indent $inner
 	Emit-Companion -tag "ExtendedTooltip" -name "${name}РасширеннаяПодсказка" -indent $inner
 
-	Emit-Events -el $el -elementName $name -indent $inner
+	Emit-Events -el $el -elementName $name -indent $inner -typeKey "calendar"
 
 	X "$indent</CalendarField>"
 }
@@ -1058,6 +1091,11 @@ X "`t</AutoCommandBar>"
 
 # 12e. Events
 if ($def.events) {
+	foreach ($p in $def.events.PSObject.Properties) {
+		if ($script:knownFormEvents -notcontains $p.Name) {
+			Write-Host "[WARN] Unknown form event '$($p.Name)'. Known: $($script:knownFormEvents -join ', ')"
+		}
+	}
 	X "`t<Events>"
 	foreach ($p in $def.events.PSObject.Properties) {
 		X "`t`t<Event name=`"$($p.Name)`">$($p.Value)</Event>"

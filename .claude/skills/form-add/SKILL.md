@@ -75,6 +75,23 @@ powershell.exe -NoProfile -File .claude\skills\form-add\scripts\form-add.ps1 -Fo
 
 Группы и таблицы поддерживают `children`/`columns` для вложенных элементов.
 
+### Кнопки: command и stdCommand
+
+- `"command": "ИмяКоманды"` → `Form.Command.ИмяКоманды`
+- `"stdCommand": "Close"` → `Form.StandardCommand.Close`
+- `"stdCommand": "Товары.Add"` → `Form.Item.Товары.StandardCommand.Add` (стандартная команда элемента)
+
+### Допустимые события (`on`)
+
+Компилятор предупреждает об ошибках в именах событий. Основные:
+
+- **input**: `OnChange`, `StartChoice`, `ChoiceProcessing`, `Clearing`, `AutoComplete`, `TextEditEnd`
+- **check**: `OnChange`
+- **table**: `OnStartEdit`, `OnEditEnd`, `OnChange`, `Selection`, `BeforeAddRow`, `BeforeDeleteRow`, `OnActivateRow`
+- **label/picture**: `Click`, `URLProcessing`
+- **pages**: `OnCurrentPageChange`
+- **button**: `Click`
+
 ### Система типов (для attributes)
 
 `string`, `string(100)`, `decimal(15,2)`, `boolean`, `date`, `dateTime`, `CatalogRef.XXX`, `DocumentObject.XXX`, `ValueTable`, `DynamicList`, `Type1 | Type2` (составной).
