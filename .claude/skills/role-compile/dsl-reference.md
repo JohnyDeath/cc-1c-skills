@@ -39,7 +39,7 @@
   "Catalog.Номенклатура: @view",
   "Document.Реализация: @edit",
   "InformationRegister.Цены: Read, Update",
-  "DataProcessor.Загрузка: @use"
+  "DataProcessor.Загрузка: @view"
 ]
 ```
 
@@ -54,7 +54,7 @@
 }
 ```
 
-- `preset` — базовый набор прав (`"view"`, `"edit"`, `"use"`)
+- `preset` — базовый набор прав (`"view"`, `"edit"`)
 - `rights` — переопределения: dict `{"Right": true/false}` или массив `["Right1", "Right2"]`
 - `rls` — RLS-ограничения: `{"ИмяПрава": "текст условия"}`
 
@@ -70,6 +70,7 @@
 | InformationRegister, AccumulationRegister, AccountingRegister, CalculationRegister, Constant, DocumentJournal | Read, View |
 | Sequence | Read |
 | CommonForm, CommonCommand, Subsystem, FilterCriterion, CommonAttribute | View |
+| DataProcessor, Report | Use, View |
 | SessionParameter | Get |
 | Configuration | ThinClient, WebClient, Output, SaveUserData, MainWindowModeNormal |
 
@@ -87,13 +88,7 @@
 | SessionParameter | Get, Set |
 | CommonAttribute | View, Edit |
 
-### `@use` — использование
-
-| Тип объекта | Права |
-|-------------|-------|
-| DataProcessor, Report | Use, View |
-| CommonForm, CommonCommand, Subsystem | View |
-| WebService, HTTPService, IntegrationService | Use |
+Для сервисов (WebService, HTTPService, IntegrationService) пресеты не определены — используй явные права: `"WebService.Имя: Use"`.
 
 Если пресет не определён для типа объекта — предупреждение с подсказкой доступных.
 
@@ -241,7 +236,7 @@
   "objects": [
     "Catalog.Номенклатура: @view",
     "Catalog.Контрагенты: @view",
-    "DataProcessor.Загрузка: @use"
+    "DataProcessor.Загрузка: @view"
   ]
 }
 ```
@@ -296,7 +291,7 @@
     "Справочник.Контрагенты: @view",
     "Документ.Реализация: Чтение, Просмотр",
     "РегистрСведений.Цены: @edit",
-    "Обработка.ЗагрузкаДанных: @use"
+    "Обработка.ЗагрузкаДанных: @view"
   ]
 }
 ```

@@ -264,7 +264,7 @@ $script:knownRights = @{
 $script:nestedRights = @("View","Edit")
 $script:commandRights = @("View")
 
-# --- 4. Presets (@view, @edit, @use) ---
+# --- 4. Presets (@view, @edit) ---
 
 $script:presets = @{
 	"view" = @{
@@ -289,6 +289,8 @@ $script:presets = @{
 		"FilterCriterion" = @("View")
 		"SessionParameter" = @("Get")
 		"CommonAttribute" = @("View")
+		"DataProcessor" = @("Use","View")
+		"Report" = @("Use","View")
 		"Configuration" = @("ThinClient","WebClient","Output","SaveUserData","MainWindowModeNormal")
 	}
 	"edit" = @{
@@ -308,16 +310,6 @@ $script:presets = @{
 		"Sequence" = @("Read","Update")
 		"SessionParameter" = @("Get","Set")
 		"CommonAttribute" = @("View","Edit")
-	}
-	"use" = @{
-		"DataProcessor" = @("Use","View")
-		"Report" = @("Use","View")
-		"CommonForm" = @("View")
-		"CommonCommand" = @("View")
-		"Subsystem" = @("View")
-		"WebService" = @("Use")
-		"HTTPService" = @("Use")
-		"IntegrationService" = @("Use")
 	}
 }
 
@@ -341,7 +333,7 @@ function Resolve-Preset {
 	$preset = $presetName.TrimStart('@')
 
 	if (-not $script:presets.ContainsKey($preset)) {
-		Write-Warning "Unknown preset '@$preset'. Known: @view, @edit, @use"
+		Write-Warning "Unknown preset '@$preset'. Known: @view, @edit"
 		return @()
 	}
 

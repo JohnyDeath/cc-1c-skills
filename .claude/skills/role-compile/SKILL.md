@@ -42,6 +42,7 @@ powershell.exe -NoProfile -File .claude\skills\role-compile\scripts\role-compile
 "objects": [
   "Catalog.Номенклатура: @view",
   "Document.Реализация: @edit",
+  "DataProcessor.Загрузка: @view",
   "InformationRegister.Цены: Read, Update",
   { "name": "Document.Продажа", "preset": "view", "rights": {"Delete": false}, "rls": {"Read": "#Шаблон(\"\")"} }
 ]
@@ -54,11 +55,12 @@ powershell.exe -NoProfile -File .claude\skills\role-compile\scripts\role-compile
 
 | Пресет | Действие |
 |--------|----------|
-| `@view` | Просмотр — Read, View (+InputByString для справочников/документов) |
+| `@view` | Просмотр — Read, View (+InputByString для справочников/документов; Use+View для обработок/отчётов) |
 | `@edit` | Полное редактирование — CRUD + Interactive* + Posting (документы) |
-| `@use` | Использование — Use, View (обработки/отчёты/сервисы) |
 
 `@` обязателен в shorthand. В объектной форме — `"preset": "view"` без `@`.
+
+Для сервисов (WebService, HTTPService, IntegrationService) пресеты не определены — используй явные права: `"WebService.Имя: Use"`.
 
 ### Русские синонимы
 
@@ -79,7 +81,7 @@ powershell.exe -NoProfile -File .claude\skills\role-compile\scripts\role-compile
 ```json
 {
   "name": "ЧтениеНоменклатуры", "synonym": "Чтение номенклатуры",
-  "objects": ["Catalog.Номенклатура: @view", "Catalog.Контрагенты: @view", "DataProcessor.Загрузка: @use"]
+  "objects": ["Catalog.Номенклатура: @view", "Catalog.Контрагенты: @view", "DataProcessor.Загрузка: @view"]
 }
 ```
 
