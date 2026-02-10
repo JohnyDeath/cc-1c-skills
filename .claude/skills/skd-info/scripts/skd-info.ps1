@@ -731,32 +731,109 @@ elseif ($Mode -eq "fields") {
 	}
 
 	if ($Name) {
-		# Search nested items first (Union child over Union parent)
+		# Detail for specific field by dataPath — search all datasets
 		$found = $false
+		$matchedIn = @()
+
+		function Collect-FieldInfo($dsNode) {
+			$dsType = Get-DataSetType $dsNode
+			$dsNameStr = $dsNode.SelectSingleNode("s:name", $ns).InnerText
+			foreach ($f in $dsNode.SelectNodes("s:field", $ns)) {
+				$dp = $f.SelectSingleNode("s:dataPath", $ns)
+				if (-not $dp -or $dp.InnerText -ne $Name) { continue }
+
+				$info = @{ dataset = "$dsNameStr [$dsType]" }
+
+				$titleNode = $f.SelectSingleNode("s:title", $ns)
+				$info.title = if ($titleNode) { Get-MLText $titleNode } else { "" }
+
+				# ValueType
+				$vt = $f.SelectSingleNode("s:valueType", $ns)
+				$info.type = if ($vt) { Get-CompactType $vt } else { "" }
+
+				# Role
+				$role = $f.SelectSingleNode("s:role", $ns)
+				$roleParts = @()
+				if ($role) {
+					foreach ($child in $role.ChildNodes) {
+						if ($child.NodeType -eq "Element" -and $child.InnerText -eq "true") {
+							$roleParts += $child.LocalName
+						}
+					}
+				}
+				$info.role = $roleParts -join ", "
+
+				# UseRestriction
+				$restrict = $f.SelectSingleNode("s:useRestriction", $ns)
+				$restrictParts = @()
+				if ($restrict) {
+					foreach ($child in $restrict.ChildNodes) {
+						if ($child.NodeType -eq "Element" -and $child.InnerText -eq "true") {
+							$restrictParts += $child.LocalName
+						}
+					}
+				}
+				$info.restrict = $restrictParts -join ", "
+
+				# Format
+				$formatStr = ""
+				$appearance = $f.SelectSingleNode("s:appearance", $ns)
+				if ($appearance) {
+					foreach ($appItem in $appearance.SelectNodes("dcscor:item", $ns)) {
+						$pn = $appItem.SelectSingleNode("dcscor:parameter", $ns)
+						$vn = $appItem.SelectSingleNode("dcscor:value", $ns)
+						if ($pn -and ($pn.InnerText -eq "Формат" -or $pn.InnerText -eq "Format") -and $vn) {
+							$formatStr = $vn.InnerText
+						}
+					}
+				}
+				$info.format = $formatStr
+
+				# PresentationExpression
+				$presExpr = $f.SelectSingleNode("s:presentationExpression", $ns)
+				$info.presExpr = if ($presExpr) { $presExpr.InnerText } else { "" }
+
+				return $info
+			}
+			return $null
+		}
+
+		# Search all datasets and nested items
+		$fieldInfos = @()
 		foreach ($ds in $dataSets) {
-			foreach ($subDs in $ds.SelectNodes("s:item", $ns)) {
-				$subNameNode = $subDs.SelectSingleNode("s:name", $ns)
-				if ($subNameNode -and $subNameNode.InnerText -eq $Name) {
-					Show-DataSetFields $subDs
-					$found = $true
-					break
-				}
-			}
-			if ($found) { break }
-		}
-		if (-not $found) {
-			foreach ($ds in $dataSets) {
-				$dsNameNode = $ds.SelectSingleNode("s:name", $ns)
-				if ($dsNameNode -and $dsNameNode.InnerText -eq $Name) {
-					Show-DataSetFields $ds
-					$found = $true
-					break
+			$info = Collect-FieldInfo $ds
+			if ($info) { $fieldInfos += $info }
+			$dsType = Get-DataSetType $ds
+			if ($dsType -eq "Union") {
+				foreach ($subDs in $ds.SelectNodes("s:item", $ns)) {
+					$info = Collect-FieldInfo $subDs
+					if ($info) { $fieldInfos += $info }
 				}
 			}
 		}
-		if (-not $found) {
-			Write-Error "Dataset '$Name' not found"
+
+		if ($fieldInfos.Count -eq 0) {
+			Write-Error "Field '$Name' not found in any dataset"
 			exit 1
+		}
+
+		# Use first match for detail (they usually share the same properties)
+		$first = $fieldInfos[0]
+		$titleStr = if ($first.title) { " `"$($first.title)`"" } else { "" }
+		$lines.Add("=== Field: $Name$titleStr ===")
+		$lines.Add("")
+
+		# Datasets
+		$dsList = ($fieldInfos | ForEach-Object { $_.dataset }) -join ", "
+		$lines.Add("Dataset: $dsList")
+
+		if ($first.type) { $lines.Add("Type: $($first.type)") }
+		if ($first.role) { $lines.Add("Role: $($first.role)") }
+		if ($first.restrict) { $lines.Add("Restrict: $($first.restrict)") }
+		if ($first.format) { $lines.Add("Format: $($first.format)") }
+		if ($first.presExpr) {
+			$lines.Add("PresentationExpression:")
+			foreach ($el in ($first.presExpr -split "`n")) { $lines.Add("  $($el.TrimEnd())") }
 		}
 	} else {
 		# Compact map: field names per dataset
@@ -789,7 +866,7 @@ elseif ($Mode -eq "fields") {
 		}
 
 		$lines.Add("")
-		$lines.Add("Use -Name <dataset> for full field table.")
+		$lines.Add("Use -Name <field> for details.")
 	}
 }
 
