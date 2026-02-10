@@ -1,7 +1,7 @@
 ﻿param(
 	[Parameter(Mandatory=$true)]
 	[string]$TemplatePath,
-	[ValidateSet("overview", "query", "fields", "links", "totals", "params", "variant")]
+	[ValidateSet("overview", "query", "fields", "links", "totals", "params", "variant", "trace")]
 	[string]$Mode = "overview",
 	[string]$Name,
 	[int]$Batch = 0,
@@ -516,6 +516,7 @@ if ($Mode -eq "overview") {
 	} elseif ($variants.Count -gt 1) {
 		$hints += "-Mode variant -Name <N> variant structure (1..$($variants.Count))"
 	}
+	$hints += "-Mode trace -Name <f>   trace field origin (by name or title)"
 	$lines.Add("Next:")
 	foreach ($h in $hints) { $lines.Add("  $h") }
 }
@@ -1134,6 +1135,199 @@ elseif ($Mode -eq "variant") {
 				$lines.Add("")
 				$lines.Add("Output: " + ($opStrs -join "  "))
 			}
+		}
+	}
+}
+
+# ============================================================
+# MODE: trace
+# ============================================================
+elseif ($Mode -eq "trace") {
+
+	if (-not $Name) {
+		Write-Error "Trace mode requires -Name <field_name_or_title>"
+		exit 1
+	}
+
+	# --- Build field index ---
+
+	$dsFields = @{}     # dataPath -> @{ datasets=@(); title="" }
+	$calcFields = @{}   # dataPath -> @{ expression=""; title="" }
+	$resFields = @{}    # dataPath -> @(@{ expression=""; group="" })
+	$titleMap = @{}     # title -> dataPath
+
+	# Scan dataset fields (including nested Union items)
+	$dataSets = $root.SelectNodes("s:dataSet", $ns)
+	foreach ($ds in $dataSets) {
+		$dsName = $ds.SelectSingleNode("s:name", $ns).InnerText
+		$dsType = Get-DataSetType $ds
+
+		foreach ($f in $ds.SelectNodes("s:field", $ns)) {
+			$dp = $f.SelectSingleNode("s:dataPath", $ns)
+			if (-not $dp) { continue }
+			$dpStr = $dp.InnerText
+			if (-not $dsFields.ContainsKey($dpStr)) {
+				$dsFields[$dpStr] = @{ datasets = @(); title = "" }
+			}
+			$dsFields[$dpStr].datasets += "$dsName [$dsType]"
+			$titleNode = $f.SelectSingleNode("s:title", $ns)
+			if ($titleNode) {
+				$t = Get-MLText $titleNode
+				if ($t) {
+					if (-not $dsFields[$dpStr].title) { $dsFields[$dpStr].title = $t }
+					if (-not $titleMap.ContainsKey($t)) { $titleMap[$t] = $dpStr }
+				}
+			}
+		}
+
+		if ($dsType -eq "Union") {
+			foreach ($subDs in $ds.SelectNodes("s:item", $ns)) {
+				$subName = $subDs.SelectSingleNode("s:name", $ns).InnerText
+				$subType = Get-DataSetType $subDs
+				foreach ($f in $subDs.SelectNodes("s:field", $ns)) {
+					$dp = $f.SelectSingleNode("s:dataPath", $ns)
+					if (-not $dp) { continue }
+					$dpStr = $dp.InnerText
+					if (-not $dsFields.ContainsKey($dpStr)) {
+						$dsFields[$dpStr] = @{ datasets = @(); title = "" }
+					}
+					$dsFields[$dpStr].datasets += "$subName [$subType]"
+					$titleNode = $f.SelectSingleNode("s:title", $ns)
+					if ($titleNode) {
+						$t = Get-MLText $titleNode
+						if ($t) {
+							if (-not $dsFields[$dpStr].title) { $dsFields[$dpStr].title = $t }
+							if (-not $titleMap.ContainsKey($t)) { $titleMap[$t] = $dpStr }
+						}
+					}
+				}
+			}
+		}
+	}
+
+	# Scan calculated fields
+	foreach ($cf in $root.SelectNodes("s:calculatedField", $ns)) {
+		$dpStr = $cf.SelectSingleNode("s:dataPath", $ns).InnerText
+		$expr = $cf.SelectSingleNode("s:expression", $ns).InnerText
+		$cfTitle = $cf.SelectSingleNode("s:title", $ns)
+		$t = ""
+		if ($cfTitle) { $t = Get-MLText $cfTitle }
+		$calcFields[$dpStr] = @{ expression = $expr; title = $t }
+		if ($t -and -not $titleMap.ContainsKey($t)) { $titleMap[$t] = $dpStr }
+	}
+
+	# Scan resources
+	foreach ($tf in $root.SelectNodes("s:totalField", $ns)) {
+		$dpStr = $tf.SelectSingleNode("s:dataPath", $ns).InnerText
+		$expr = $tf.SelectSingleNode("s:expression", $ns).InnerText
+		$grp = $tf.SelectSingleNode("s:group", $ns)
+		$groupStr = "(overall)"
+		if ($grp) { $groupStr = $grp.InnerText }
+		if (-not $resFields.ContainsKey($dpStr)) { $resFields[$dpStr] = @() }
+		$resFields[$dpStr] += @{ expression = $expr; group = $groupStr }
+	}
+
+	# --- Resolve name: try dataPath, then exact title, then substring title ---
+	$targetPath = $Name
+	$knownPaths = @()
+	$knownPaths += $dsFields.Keys
+	$knownPaths += $calcFields.Keys
+	$knownPaths += $resFields.Keys
+	$isKnown = $knownPaths -contains $Name
+
+	if (-not $isKnown) {
+		if ($titleMap.ContainsKey($Name)) {
+			$targetPath = $titleMap[$Name]
+		} else {
+			# Substring match in titles
+			$matchedTitle = $null
+			foreach ($key in $titleMap.Keys) {
+				if ($key -like "*$Name*") {
+					$matchedTitle = $key
+					break
+				}
+			}
+			if ($matchedTitle) {
+				$targetPath = $titleMap[$matchedTitle]
+			} else {
+				Write-Error "Field '$Name' not found by dataPath or title"
+				exit 1
+			}
+		}
+	}
+
+	# --- Build output ---
+	$title = ""
+	if ($calcFields.ContainsKey($targetPath) -and $calcFields[$targetPath].title) {
+		$title = $calcFields[$targetPath].title
+	} elseif ($dsFields.ContainsKey($targetPath) -and $dsFields[$targetPath].title) {
+		$title = $dsFields[$targetPath].title
+	}
+	$titleStr = if ($title) { " `"$title`"" } else { "" }
+
+	$lines.Add("=== Trace: $targetPath$titleStr ===")
+	$lines.Add("")
+
+	# Dataset origin
+	if ($dsFields.ContainsKey($targetPath)) {
+		$uniqueDs = $dsFields[$targetPath].datasets | Select-Object -Unique
+		$lines.Add("Dataset: $($uniqueDs -join ', ')")
+	} else {
+		$lines.Add("Dataset: (schema-level only, not in dataset fields)")
+	}
+
+	# Calculated field
+	if ($calcFields.ContainsKey($targetPath)) {
+		$cf = $calcFields[$targetPath]
+		$lines.Add("")
+		$lines.Add("Calculated:")
+		foreach ($el in ($cf.expression -split "`n")) { $lines.Add("  $($el.TrimEnd())") }
+
+		# Extract operands: find known field names in expression
+		$operands = @()
+		$allKnown = @()
+		$allKnown += $dsFields.Keys
+		$allKnown += $calcFields.Keys
+		$allKnown = $allKnown | Select-Object -Unique | Where-Object { $_ -ne $targetPath }
+		# Sort by length descending to match longer names first
+		$allKnown = $allKnown | Sort-Object -Property Length -Descending
+
+		foreach ($fieldName in $allKnown) {
+			$escaped = [regex]::Escape($fieldName)
+			if ($cf.expression -match "(?<![а-яА-ЯёЁa-zA-Z0-9_.])$escaped(?![а-яА-ЯёЁa-zA-Z0-9_.])") {
+				$operands += $fieldName
+			}
+		}
+
+		if ($operands.Count -gt 0) {
+			$lines.Add("  Operands:")
+			foreach ($op in $operands) {
+				if ($calcFields.ContainsKey($op)) {
+					$lines.Add("    $op -> calculated")
+				} elseif ($dsFields.ContainsKey($op)) {
+					$opDs = ($dsFields[$op].datasets | Select-Object -Unique) -join ", "
+					$lines.Add("    $op -> $opDs")
+				} else {
+					$lines.Add("    $op")
+				}
+			}
+		}
+	}
+
+	# Resource
+	if ($resFields.ContainsKey($targetPath)) {
+		$lines.Add("")
+		$lines.Add("Resource:")
+		foreach ($r in $resFields[$targetPath]) {
+			$lines.Add("  [$($r.group)] $($r.expression)")
+		}
+	}
+
+	# Simple dataset field, no calc/resource
+	if (-not $calcFields.ContainsKey($targetPath) -and -not $resFields.ContainsKey($targetPath)) {
+		if ($dsFields.ContainsKey($targetPath)) {
+			$lines.Add("")
+			$lines.Add("(direct dataset field, no calculated expression or resource)")
 		}
 	}
 }

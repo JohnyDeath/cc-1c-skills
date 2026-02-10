@@ -1,7 +1,7 @@
 ---
 name: skd-info
 description: Анализ структуры схемы компоновки данных 1С (СКД) — наборы, поля, параметры, варианты
-argument-hint: <TemplatePath> [-Mode overview|query|fields|links|totals|params|variant] [-Name <dataset|variant>]
+argument-hint: <TemplatePath> [-Mode overview|query|fields|links|totals|params|variant|trace] [-Name <dataset|variant|field>]
 allowed-tools:
   - Bash
   - Read
@@ -24,7 +24,7 @@ allowed-tools:
 | Параметр     | Обязательный | По умолчанию | Описание                                          |
 |--------------|:------------:|--------------|---------------------------------------------------|
 | TemplatePath | да           | —            | Путь к Template.xml или каталогу макета            |
-| Mode         | нет          | `overview`   | Режим: `overview`, `query`, `fields`, `links`, `totals`, `params`, `variant` |
+| Mode         | нет          | `overview`   | Режим: `overview`, `query`, `fields`, `links`, `totals`, `params`, `variant`, `trace` |
 | Name         | нет          | —            | Имя набора (query/fields), поля (totals) или варианта (variant) |
 | Batch        | нет          | `0`          | Номер пакета запроса (0 = все). Только для query   |
 | Limit        | нет          | `150`        | Макс. строк вывода (защита от переполнения)        |
@@ -45,7 +45,10 @@ powershell.exe -NoProfile -File .claude\skills\skd-info\scripts\skd-info.ps1 -Te
 ... -Mode fields -Name НаборДанных1
 ... -Mode links
 ... -Mode totals
+... -Mode totals -Name СуммаНалога
 ... -Mode params
+... -Mode trace -Name КоэффициентКи
+... -Mode trace -Name "Коэффициент Ки"
 ... -Mode variant -Name Основной
 ... -Mode variant -Name 1
 ```
@@ -210,6 +213,27 @@ DataParams: КлючВарианта="НоменклатураИЦены"
 Output: style=ЧерноБелый  groups=Separately  totalsH=None  totalsV=None
 ```
 
+### trace — трассировка поля от заголовка до запроса
+
+Ищет поле по dataPath ИЛИ заголовку (включая подстроку) и показывает полную цепочку происхождения за один вызов:
+
+```
+=== Trace: КоэффициентКи "Коэффициент Ки" ===
+
+Dataset: (schema-level only, not in dataset fields)
+
+Calculated:
+  ВЫБОР КОГДА ... ТОГДА 0 ИНАЧЕ ... КОНЕЦ
+  Operands:
+    КоличествоМесяцевИспользования -> РасчетНалогаНаИмущество [Query]
+    КоличествоМесяцевВладения -> РасчетНалогаНаИмущество [Query]
+
+Resource:
+  [ОсновноеСредство] Сумма(КоэффициентКи)
+```
+
+Типичный сценарий: пользователь видит колонку "Коэффициент Ки" в отчёте и спрашивает как она считается. Один вызов `trace` показывает: формулу вычисления, откуда берутся операнды, как агрегируется в ресурс.
+
 ## Разрешение пути
 
 - Прямой путь: `path/to/Template.xml`
@@ -232,6 +256,7 @@ Output: style=ЧерноБелый  groups=Separately  totalsH=None  totalsV=Non
 - **Формулы и ресурсы**: totals для вычисляемых полей и ресурсов
 - **Программный вызов**: params для списка параметров
 - **Изменение вывода**: variant для структуры группировок и фильтров
+- **Как считается колонка?**: trace для полной цепочки от заголовка до запроса
 
 ## Защита от переполнения
 
