@@ -406,4 +406,4 @@ powershell.exe -NoProfile -File .claude\skills\form-compile\scripts\form-compile
 
 - **Тип главного реквизита**: `ExternalDataProcessorObject.ИмяОбработки` (не `DataProcessorObject`)
 - **DataPath**: используйте реквизиты формы (`ИмяРеквизита`), а не `Объект.ИмяРеквизита` — у внешних обработок нет реквизитов объекта в метаданных
-- **Ссылочные типы**: `CatalogRef.XXX`, `DocumentRef.XXX` и т.д. могут не собраться в пустой базе — используйте `string` или базовые типы для автономной сборки
+- **Ссылочные типы**: `CatalogRef.XXX`, `DocumentRef.XXX` допустимы в XML, но для сборки EPF потребуется база с целевой конфигурацией (см. `/epf-build`)
