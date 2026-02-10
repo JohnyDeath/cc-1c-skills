@@ -755,21 +755,37 @@ elseif ($Mode -eq "fields") {
 			exit 1
 		}
 	} else {
-		# Show all datasets
-		$first = $true
-		foreach ($ds in $dataSets) {
-			if (-not $first) { $lines.Add("") }
-			$first = $false
-			Show-DataSetFields $ds
+		# Compact map: field names per dataset
+		$lines.Add("=== Fields map ===")
 
+		function Show-DataSetFieldMap($dsNode, $indent) {
+			$dsType = Get-DataSetType $dsNode
+			$dsNameStr = $dsNode.SelectSingleNode("s:name", $ns).InnerText
+			$fields = $dsNode.SelectNodes("s:field", $ns)
+			$fieldNames = @()
+			foreach ($f in $fields) {
+				$dp = $f.SelectSingleNode("s:dataPath", $ns)
+				if ($dp) { $fieldNames += $dp.InnerText }
+			}
+			$nameList = $fieldNames -join ", "
+			if ($nameList.Length -gt 100) {
+				$nameList = $nameList.Substring(0, 97) + "..."
+			}
+			$lines.Add("$indent$dsNameStr [$dsType] ($($fields.Count)): $nameList")
+		}
+
+		foreach ($ds in $dataSets) {
+			Show-DataSetFieldMap $ds ""
 			$dsType = Get-DataSetType $ds
 			if ($dsType -eq "Union") {
 				foreach ($subDs in $ds.SelectNodes("s:item", $ns)) {
-					$lines.Add("")
-					Show-DataSetFields $subDs
+					Show-DataSetFieldMap $subDs "  "
 				}
 			}
 		}
+
+		$lines.Add("")
+		$lines.Add("Use -Name <dataset> for full field table.")
 	}
 }
 
@@ -814,52 +830,113 @@ elseif ($Mode -eq "links") {
 # ============================================================
 elseif ($Mode -eq "totals") {
 
-	# Calculated fields
 	$calcFields = $root.SelectNodes("s:calculatedField", $ns)
-	if ($calcFields.Count -gt 0) {
-		$lines.Add("=== Calculated fields ($($calcFields.Count)) ===")
+	$totalFields = $root.SelectNodes("s:totalField", $ns)
+
+	if ($Name) {
+		# Detail for specific field
+		$found = $false
+
+		# Search in calculated fields
 		foreach ($cf in $calcFields) {
 			$cfPath = $cf.SelectSingleNode("s:dataPath", $ns).InnerText
-			$cfExpr = $cf.SelectSingleNode("s:expression", $ns).InnerText
-			$cfTitle = $cf.SelectSingleNode("s:title", $ns)
-			$titleStr = ""
-			if ($cfTitle) {
-				$t = Get-MLText $cfTitle
-				if ($t) { $titleStr = "  `"$t`"" }
-			}
+			if ($cfPath -eq $Name) {
+				$lines.Add("=== Calculated: $cfPath ===")
+				$lines.Add("")
 
-			$cfRestrict = $cf.SelectSingleNode("s:useRestriction", $ns)
-			$restrictStr = ""
-			if ($cfRestrict) {
-				$parts = @()
-				foreach ($child in $cfRestrict.ChildNodes) {
-					if ($child.NodeType -eq "Element" -and $child.InnerText -eq "true") {
-						$parts += $child.LocalName.Substring(0, [Math]::Min(4, $child.LocalName.Length))
-					}
+				$cfExpr = $cf.SelectSingleNode("s:expression", $ns).InnerText
+				$lines.Add("Expression:")
+				foreach ($el in ($cfExpr -split "`n")) { $lines.Add("  $($el.TrimEnd())") }
+
+				$cfTitle = $cf.SelectSingleNode("s:title", $ns)
+				if ($cfTitle) {
+					$t = Get-MLText $cfTitle
+					if ($t) { $lines.Add("Title: $t") }
 				}
-				if ($parts.Count -gt 0) { $restrictStr = "  restrict:" + ($parts -join ",") }
-			}
-			$lines.Add("  $cfPath = $cfExpr$restrictStr$titleStr")
-		}
-		$lines.Add("")
-	}
 
-	# Total fields (resources)
-	$totalFields = $root.SelectNodes("s:totalField", $ns)
-	if ($totalFields.Count -gt 0) {
-		$lines.Add("=== Resources ($($totalFields.Count)) ===")
+				$cfRestrict = $cf.SelectSingleNode("s:useRestriction", $ns)
+				if ($cfRestrict) {
+					$parts = @()
+					foreach ($child in $cfRestrict.ChildNodes) {
+						if ($child.NodeType -eq "Element" -and $child.InnerText -eq "true") {
+							$parts += $child.LocalName
+						}
+					}
+					if ($parts.Count -gt 0) { $lines.Add("Restrict: $($parts -join ', ')") }
+				}
+
+				$found = $true
+				break
+			}
+		}
+
+		# Search in resources (also show if already found in calculated — field can be both)
+		$matchedResources = @()
 		foreach ($tf in $totalFields) {
 			$tfPath = $tf.SelectSingleNode("s:dataPath", $ns).InnerText
-			$tfExpr = $tf.SelectSingleNode("s:expression", $ns).InnerText
-			$tfGroup = $tf.SelectSingleNode("s:group", $ns)
-			$groupStr = ""
-			if ($tfGroup) { $groupStr = " [group:$($tfGroup.InnerText)]" }
-			$lines.Add("  $tfPath = $tfExpr$groupStr")
+			if ($tfPath -eq $Name) { $matchedResources += $tf }
 		}
-	}
+		if ($matchedResources.Count -gt 0) {
+			if ($found) { $lines.Add("") }
+			$lines.Add("=== Resource: $Name ===")
+			$lines.Add("")
+			foreach ($tf in $matchedResources) {
+				$tfExpr = $tf.SelectSingleNode("s:expression", $ns).InnerText
+				$tfGroup = $tf.SelectSingleNode("s:group", $ns)
+				$groupStr = "(overall)"
+				if ($tfGroup) { $groupStr = $tfGroup.InnerText }
+				$lines.Add("  [$groupStr] $tfExpr")
+			}
+			$found = $true
+		}
 
-	if ($calcFields.Count -eq 0 -and $totalFields.Count -eq 0) {
-		$lines.Add("(no calculated fields or resources)")
+		if (-not $found) {
+			Write-Error "Field '$Name' not found in calculated fields or resources"
+			exit 1
+		}
+	} else {
+		# Compact map
+		if ($calcFields.Count -gt 0) {
+			$lines.Add("=== Calculated fields ($($calcFields.Count)) ===")
+			foreach ($cf in $calcFields) {
+				$cfPath = $cf.SelectSingleNode("s:dataPath", $ns).InnerText
+				$cfTitle = $cf.SelectSingleNode("s:title", $ns)
+				$titleStr = ""
+				if ($cfTitle) {
+					$t = Get-MLText $cfTitle
+					if ($t -and $t -ne $cfPath) { $titleStr = "  `"$t`"" }
+				}
+				$lines.Add("  $cfPath$titleStr")
+			}
+			$lines.Add("")
+		}
+
+		if ($totalFields.Count -gt 0) {
+			$lines.Add("=== Resources ($($totalFields.Count)) ===")
+			# Collect unique field names with group info
+			$resMap = [ordered]@{}
+			foreach ($tf in $totalFields) {
+				$tfPath = $tf.SelectSingleNode("s:dataPath", $ns).InnerText
+				$tfGroup = $tf.SelectSingleNode("s:group", $ns)
+				if (-not $resMap.Contains($tfPath)) {
+					$resMap[$tfPath] = @{ hasGroup = $false }
+				}
+				if ($tfGroup) { $resMap[$tfPath].hasGroup = $true }
+			}
+			foreach ($key in $resMap.Keys) {
+				$groupMark = if ($resMap[$key].hasGroup) { " *" } else { "" }
+				$lines.Add("  $key$groupMark")
+			}
+			$lines.Add("")
+			$lines.Add("  * = has group-level formulas")
+		}
+
+		if ($calcFields.Count -eq 0 -and $totalFields.Count -eq 0) {
+			$lines.Add("(no calculated fields or resources)")
+		} else {
+			$lines.Add("")
+			$lines.Add("Use -Name <field> for full expression.")
+		}
 	}
 }
 
