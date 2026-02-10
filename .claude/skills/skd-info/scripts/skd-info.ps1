@@ -646,6 +646,22 @@ elseif ($Mode -eq "query") {
 # ============================================================
 elseif ($Mode -eq "fields") {
 
+	# Links (full detail)
+	$links = $root.SelectNodes("s:dataSetLink", $ns)
+	if ($links.Count -gt 0) {
+		$lines.Add("--- links ---")
+		foreach ($lnk in $links) {
+			$srcDs = $lnk.SelectSingleNode("s:sourceDataSet", $ns).InnerText
+			$dstDs = $lnk.SelectSingleNode("s:destinationDataSet", $ns).InnerText
+			$srcExpr = $lnk.SelectSingleNode("s:sourceExpression", $ns).InnerText
+			$dstExpr = $lnk.SelectSingleNode("s:destinationExpression", $ns).InnerText
+			$paramNode = $lnk.SelectSingleNode("s:parameter", $ns)
+			$paramStr = if ($paramNode) { "  param=$($paramNode.InnerText)" } else { "" }
+			$lines.Add("  $srcDs.$srcExpr -> $dstDs.$dstExpr$paramStr")
+		}
+		$lines.Add("")
+	}
+
 	$dataSets = $root.SelectNodes("s:dataSet", $ns)
 
 	function Show-DataSetFields($dsNode) {
