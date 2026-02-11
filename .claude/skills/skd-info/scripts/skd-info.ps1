@@ -1,4 +1,6 @@
-﻿param(
+﻿# skd-info v1.0 — Analyze 1C DCS structure
+# Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
+param(
 	[Parameter(Mandatory=$true)]
 	[string]$TemplatePath,
 	[ValidateSet("overview", "query", "fields", "links", "calculated", "resources", "params", "variant", "trace", "templates")]

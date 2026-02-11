@@ -1,4 +1,6 @@
-﻿param(
+﻿# skd-compile v1.0 — Compile 1C DCS from JSON
+# Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
+param(
 	[Parameter(Mandatory)]
 	[string]$JsonPath,
 

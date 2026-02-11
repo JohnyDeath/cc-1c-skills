@@ -1,4 +1,6 @@
-﻿param(
+﻿# skd-edit v1.0 — Atomic 1C DCS editor
+# Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
+param(
 	[Parameter(Mandatory)]
 	[string]$TemplatePath,
 
