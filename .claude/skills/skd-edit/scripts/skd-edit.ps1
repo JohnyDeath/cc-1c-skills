@@ -5,8 +5,10 @@
 	[Parameter(Mandatory)]
 	[ValidateSet(
 		"add-field","add-total","add-calculated-field","add-parameter","add-filter",
-		"add-dataParameter","add-order","add-selection",
-		"set-query","set-outputParameter",
+		"add-dataParameter","add-order","add-selection","add-dataSetLink",
+		"set-query","set-outputParameter","set-structure",
+		"modify-field","modify-filter","modify-dataParameter",
+		"clear-selection","clear-order","clear-filter",
 		"remove-field","remove-total","remove-calculated-field","remove-parameter","remove-filter")]
 	[string]$Operation,
 
@@ -143,6 +145,66 @@ function Parse-FieldShorthand {
 
 	$result.field = $result.dataPath
 	return $result
+}
+
+function Read-FieldProperties($fieldEl) {
+	$props = @{
+		dataPath = ""; field = ""; title = ""; type = ""
+		roles = @(); restrict = @()
+	}
+
+	foreach ($ch in $fieldEl.ChildNodes) {
+		if ($ch.NodeType -ne 'Element') { continue }
+		switch ($ch.LocalName) {
+			"dataPath" { $props.dataPath = $ch.InnerText.Trim() }
+			"field" { $props.field = $ch.InnerText.Trim() }
+			"title" {
+				# Extract text from LocalStringType
+				foreach ($item in $ch.ChildNodes) {
+					if ($item.NodeType -eq 'Element' -and $item.LocalName -eq 'item') {
+						foreach ($gc in $item.ChildNodes) {
+							if ($gc.NodeType -eq 'Element' -and $gc.LocalName -eq 'content') {
+								$props.title = $gc.InnerText.Trim()
+							}
+						}
+					}
+				}
+			}
+			"valueType" {
+				# Read type info — store the raw element for now, we'll use type from parsed if overridden
+				$typeEl = $null
+				foreach ($gc in $ch.ChildNodes) {
+					if ($gc.NodeType -eq 'Element' -and $gc.LocalName -eq 'Type') {
+						$typeEl = $gc; break
+					}
+				}
+				if ($typeEl) {
+					$props["_rawTypeText"] = $typeEl.InnerText.Trim()
+				}
+			}
+			"role" {
+				foreach ($gc in $ch.ChildNodes) {
+					if ($gc.NodeType -eq 'Element') {
+						if ($gc.LocalName -eq 'periodNumber') {
+							$props.roles += "period"
+						} elseif ($gc.InnerText.Trim() -eq 'true') {
+							$props.roles += $gc.LocalName
+						}
+					}
+				}
+			}
+			"useRestriction" {
+				$revMap = @{ "field" = "noField"; "condition" = "noFilter"; "group" = "noGroup"; "order" = "noOrder" }
+				foreach ($gc in $ch.ChildNodes) {
+					if ($gc.NodeType -eq 'Element' -and $gc.InnerText.Trim() -eq 'true') {
+						$mapped = $revMap[$gc.LocalName]
+						if ($mapped) { $props.restrict += $mapped }
+					}
+				}
+			}
+		}
+	}
+	return $props
 }
 
 function Parse-TotalShorthand {
@@ -337,6 +399,58 @@ function Parse-OrderShorthand {
 	$dir = "Asc"
 	if ($parts.Count -gt 1 -and $parts[1] -match '(?i)^desc$') { $dir = "Desc" }
 	return @{ field = $field; direction = $dir }
+}
+
+function Parse-DataSetLinkShorthand {
+	param([string]$s)
+
+	$result = @{ source = ""; dest = ""; sourceExpr = ""; destExpr = ""; parameter = "" }
+
+	# Extract optional [param ParamName]
+	if ($s -match '\[param\s+([^\]]+)\]') {
+		$result.parameter = $Matches[1].Trim()
+		$s = $s -replace '\s*\[param\s+[^\]]+\]', ''
+	}
+
+	# Pattern: "Source > Dest on FieldA = FieldB"
+	if ($s -match '^(.+?)\s*>\s*(.+?)\s+on\s+(.+?)\s*=\s*(.+)$') {
+		$result.source = $Matches[1].Trim()
+		$result.dest = $Matches[2].Trim()
+		$result.sourceExpr = $Matches[3].Trim()
+		$result.destExpr = $Matches[4].Trim()
+	} else {
+		Write-Error "Invalid dataSetLink shorthand: $s. Expected: 'Source > Dest on FieldA = FieldB [param Name]'"
+		exit 1
+	}
+
+	return $result
+}
+
+function Parse-StructureShorthand {
+	param([string]$s)
+
+	$segments = $s -split '\s*>\s*'
+	$result = @()
+
+	$innermost = $null
+	for ($i = $segments.Count - 1; $i -ge 0; $i--) {
+		$seg = $segments[$i].Trim()
+		$group = @{ type = "group" }
+
+		if ($seg -match '^(?i)(details|детали)$') {
+			$group["groupBy"] = @()
+		} else {
+			$group["groupBy"] = @($seg)
+		}
+
+		if ($null -ne $innermost) {
+			$group["children"] = @($innermost)
+		}
+		$innermost = $group
+	}
+
+	if ($innermost) { $result += $innermost }
+	return ,$result
 }
 
 function Parse-OutputParamShorthand {
@@ -705,6 +819,70 @@ function Build-OrderItemFragment {
 	return $lines -join "`r`n"
 }
 
+function Build-DataSetLinkFragment {
+	param($parsed, [string]$indent)
+
+	$i = $indent
+	$lines = @()
+	$lines += "$i<dataSetLink>"
+	$lines += "$i`t<sourceDataSet>$(Esc-Xml $parsed.source)</sourceDataSet>"
+	$lines += "$i`t<destinationDataSet>$(Esc-Xml $parsed.dest)</destinationDataSet>"
+	$lines += "$i`t<sourceExpression>$(Esc-Xml $parsed.sourceExpr)</sourceExpression>"
+	$lines += "$i`t<destinationExpression>$(Esc-Xml $parsed.destExpr)</destinationExpression>"
+	if ($parsed.parameter) {
+		$lines += "$i`t<parameter>$(Esc-Xml $parsed.parameter)</parameter>"
+	}
+	$lines += "$i</dataSetLink>"
+	return $lines -join "`r`n"
+}
+
+function Build-StructureItemFragment {
+	param($item, [string]$indent)
+
+	$i = $indent
+	$lines = @()
+	$lines += "$i<dcsset:item xsi:type=`"dcsset:StructureItemGroup`">"
+
+	# groupItems
+	$groupBy = $item["groupBy"]
+	if (-not $groupBy -or $groupBy.Count -eq 0) {
+		$lines += "$i`t<dcsset:groupItems/>"
+	} else {
+		$lines += "$i`t<dcsset:groupItems>"
+		foreach ($field in $groupBy) {
+			$lines += "$i`t`t<dcsset:item xsi:type=`"dcsset:GroupItemField`">"
+			$lines += "$i`t`t`t<dcsset:field>$(Esc-Xml $field)</dcsset:field>"
+			$lines += "$i`t`t`t<dcsset:groupType>Items</dcsset:groupType>"
+			$lines += "$i`t`t`t<dcsset:periodAdditionType>None</dcsset:periodAdditionType>"
+			$lines += "$i`t`t`t<dcsset:periodAdditionBegin xsi:type=`"xs:dateTime`">0001-01-01T00:00:00</dcsset:periodAdditionBegin>"
+			$lines += "$i`t`t`t<dcsset:periodAdditionEnd xsi:type=`"xs:dateTime`">0001-01-01T00:00:00</dcsset:periodAdditionEnd>"
+			$lines += "$i`t`t</dcsset:item>"
+		}
+		$lines += "$i`t</dcsset:groupItems>"
+	}
+
+	# order (Auto)
+	$lines += "$i`t<dcsset:order>"
+	$lines += "$i`t`t<dcsset:item xsi:type=`"dcsset:OrderItemAuto`"/>"
+	$lines += "$i`t</dcsset:order>"
+
+	# selection (Auto)
+	$lines += "$i`t<dcsset:selection>"
+	$lines += "$i`t`t<dcsset:item xsi:type=`"dcsset:SelectedItemAuto`"/>"
+	$lines += "$i`t</dcsset:selection>"
+
+	# Recursive children
+	if ($item["children"]) {
+		foreach ($child in $item["children"]) {
+			$childXml = Build-StructureItemFragment -item $child -indent "$i`t"
+			$lines += $childXml
+		}
+	}
+
+	$lines += "$i</dcsset:item>"
+	return $lines -join "`r`n"
+}
+
 function Build-OutputParamFragment {
 	param($parsed, [string]$indent)
 
@@ -794,6 +972,18 @@ function Insert-BeforeElement($container, $newNode, $refNode, $childIndent) {
 	}
 }
 
+function Clear-ContainerChildren($container) {
+	$toRemove = @()
+	foreach ($child in $container.ChildNodes) {
+		if ($child.NodeType -eq 'Element') {
+			$toRemove += $child
+		}
+	}
+	foreach ($el in $toRemove) {
+		Remove-NodeWithWhitespace $el
+	}
+}
+
 function Remove-NodeWithWhitespace($node) {
 	$parent = $node.ParentNode
 	$prev = $node.PreviousSibling
@@ -847,6 +1037,52 @@ function Find-ElementByChildValue($container, [string]$elemName, [string]$childN
 		}
 	}
 	return $null
+}
+
+function Set-OrCreateChildElement($parent, [string]$localName, [string]$nsUri, [string]$value, [string]$indent) {
+	$existing = $null
+	foreach ($ch in $parent.ChildNodes) {
+		if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq $localName -and $ch.NamespaceURI -eq $nsUri) {
+			$existing = $ch
+			break
+		}
+	}
+	if ($existing) {
+		$existing.InnerText = $value
+	} else {
+		$prefix = $parent.GetPrefixOfNamespace($nsUri)
+		$qualName = if ($prefix) { "${prefix}:$localName" } else { $localName }
+		$fragXml = "$indent<$qualName>$(Esc-Xml $value)</$qualName>"
+		$nodes = Import-Fragment $xmlDoc $fragXml
+		foreach ($node in $nodes) {
+			Insert-BeforeElement $parent $node $null $indent
+		}
+	}
+}
+
+function Set-OrCreateChildElementWithAttr($parent, [string]$localName, [string]$nsUri, [string]$value, [string]$xsiType, [string]$indent) {
+	$existing = $null
+	foreach ($ch in $parent.ChildNodes) {
+		if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq $localName -and $ch.NamespaceURI -eq $nsUri) {
+			$existing = $ch
+			break
+		}
+	}
+	if ($existing) {
+		$existing.InnerText = $value
+		if ($xsiType) {
+			$existing.SetAttribute("type", "http://www.w3.org/2001/XMLSchema-instance", $xsiType) | Out-Null
+		}
+	} else {
+		$prefix = $parent.GetPrefixOfNamespace($nsUri)
+		$qualName = if ($prefix) { "${prefix}:$localName" } else { $localName }
+		$typeAttr = if ($xsiType) { " xsi:type=`"$xsiType`"" } else { "" }
+		$fragXml = "$indent<$qualName$typeAttr>$(Esc-Xml $value)</$qualName>"
+		$nodes = Import-Fragment $xmlDoc $fragXml
+		foreach ($node in $nodes) {
+			Insert-BeforeElement $parent $node $null $indent
+		}
+	}
 }
 
 function Resolve-DataSet {
@@ -1007,7 +1243,7 @@ $corNs = "http://v8.1c.ru/8.1/data-composition-system/core"
 
 # --- 7. Batch value splitting ---
 
-if ($Operation -eq "set-query") {
+if ($Operation -eq "set-query" -or $Operation -eq "set-structure") {
 	$values = @($Value)
 } else {
 	$values = @($Value -split ';;' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
@@ -1045,13 +1281,18 @@ switch ($Operation) {
 				$settings = Resolve-VariantSettings
 				$varName = Get-VariantName
 				$selection = Ensure-SettingsChild $settings "selection" @()
-				$selIndent = Get-ContainerChildIndent $selection
-				$selXml = Build-SelectionItemFragment -fieldName $parsed.dataPath -indent $selIndent
-				$selNodes = Import-Fragment $xmlDoc $selXml
-				foreach ($node in $selNodes) {
-					Insert-BeforeElement $selection $node $null $selIndent
+				$existingSel = Find-ElementByChildValue $selection "item" "field" $parsed.dataPath $setNs
+				if ($existingSel) {
+					Write-Host "[INFO] Field `"$($parsed.dataPath)`" already in selection — skipped"
+				} else {
+					$selIndent = Get-ContainerChildIndent $selection
+					$selXml = Build-SelectionItemFragment -fieldName $parsed.dataPath -indent $selIndent
+					$selNodes = Import-Fragment $xmlDoc $selXml
+					foreach ($node in $selNodes) {
+						Insert-BeforeElement $selection $node $null $selIndent
+					}
+					Write-Host "[OK] Field `"$($parsed.dataPath)`" added to selection of variant `"$varName`""
 				}
-				Write-Host "[OK] Field `"$($parsed.dataPath)`" added to selection of variant `"$varName`""
 			}
 		}
 	}
@@ -1126,13 +1367,18 @@ switch ($Operation) {
 				$settings = Resolve-VariantSettings
 				$varName = Get-VariantName
 				$selection = Ensure-SettingsChild $settings "selection" @()
-				$selIndent = Get-ContainerChildIndent $selection
-				$selXml = Build-SelectionItemFragment -fieldName $parsed.dataPath -indent $selIndent
-				$selNodes = Import-Fragment $xmlDoc $selXml
-				foreach ($node in $selNodes) {
-					Insert-BeforeElement $selection $node $null $selIndent
+				$existingSel = Find-ElementByChildValue $selection "item" "field" $parsed.dataPath $setNs
+				if ($existingSel) {
+					Write-Host "[INFO] Field `"$($parsed.dataPath)`" already in selection — skipped"
+				} else {
+					$selIndent = Get-ContainerChildIndent $selection
+					$selXml = Build-SelectionItemFragment -fieldName $parsed.dataPath -indent $selIndent
+					$selNodes = Import-Fragment $xmlDoc $selXml
+					foreach ($node in $selNodes) {
+						Insert-BeforeElement $selection $node $null $selIndent
+					}
+					Write-Host "[OK] Field `"$($parsed.dataPath)`" added to selection of variant `"$varName`""
 				}
-				Write-Host "[OK] Field `"$($parsed.dataPath)`" added to selection of variant `"$varName`""
 			}
 		}
 	}
@@ -1226,6 +1472,27 @@ switch ($Operation) {
 			$orderEl = Ensure-SettingsChild $settings "order" @("filter","selection")
 			$orderIndent = Get-ContainerChildIndent $orderEl
 
+			# Duplicate check
+			if ($parsed.field -eq "Auto") {
+				$isDup = $false
+				foreach ($ch in $orderEl.ChildNodes) {
+					if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq 'item') {
+						$typeAttr = $ch.GetAttribute("type", "http://www.w3.org/2001/XMLSchema-instance")
+						if ($typeAttr -and $typeAttr.Contains("OrderItemAuto")) { $isDup = $true; break }
+					}
+				}
+				if ($isDup) {
+					Write-Host "[WARN] OrderItemAuto already exists in variant `"$varName`" — skipped"
+					continue
+				}
+			} else {
+				$existingOrd = Find-ElementByChildValue $orderEl "item" "field" $parsed.field $setNs
+				if ($existingOrd) {
+					Write-Host "[WARN] Order `"$($parsed.field)`" already exists in variant `"$varName`" — skipped"
+					continue
+				}
+			}
+
 			$fragXml = Build-OrderItemFragment -parsed $parsed -indent $orderIndent
 			$nodes = Import-Fragment $xmlDoc $fragXml
 			foreach ($node in $nodes) {
@@ -1297,6 +1564,302 @@ switch ($Operation) {
 			foreach ($node in $nodes) {
 				Insert-BeforeElement $outputEl $node $null $outputIndent
 			}
+		}
+	}
+
+	"set-structure" {
+		$settings = Resolve-VariantSettings
+		$varName = Get-VariantName
+
+		# Remove all existing structure items (dcsset:item elements)
+		$toRemove = @()
+		foreach ($ch in $settings.ChildNodes) {
+			if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq 'item' -and $ch.NamespaceURI -eq $setNs) {
+				$toRemove += $ch
+			}
+		}
+		foreach ($el in $toRemove) {
+			Remove-NodeWithWhitespace $el
+		}
+
+		# Parse structure shorthand
+		$structItems = Parse-StructureShorthand $Value
+		$settingsIndent = Get-ChildIndent $settings
+
+		# Find insertion point — before outputParameters/dataParameters/conditionalAppearance/order/filter/selection or at end
+		$refNode = Find-FirstElement $settings @("outputParameters","dataParameters","conditionalAppearance","order","filter","selection","item") $setNs
+		if (-not $refNode) { $refNode = $null }
+
+		foreach ($structItem in $structItems) {
+			$fragXml = Build-StructureItemFragment -item $structItem -indent $settingsIndent
+			$nodes = Import-Fragment $xmlDoc $fragXml
+			foreach ($node in $nodes) {
+				Insert-BeforeElement $settings $node $refNode $settingsIndent
+			}
+		}
+
+		Write-Host "[OK] Structure set in variant `"$varName`": $Value"
+	}
+
+	"add-dataSetLink" {
+		foreach ($val in $values) {
+			$parsed = Parse-DataSetLinkShorthand $val
+			$root = $xmlDoc.DocumentElement
+			$childIndent = Get-ChildIndent $root
+
+			$fragXml = Build-DataSetLinkFragment -parsed $parsed -indent $childIndent
+			$nodes = Import-Fragment $xmlDoc $fragXml
+
+			# Insert after last dataSetLink, or before calculatedField/totalField/parameter/...
+			$lastLink = Find-LastElement $root "dataSetLink" $schNs
+			if ($lastLink) {
+				$refNode = $lastLink.NextSibling
+				while ($refNode -and ($refNode.NodeType -eq 'Whitespace' -or $refNode.NodeType -eq 'SignificantWhitespace')) {
+					$refNode = $refNode.NextSibling
+				}
+			} else {
+				$refNode = Find-FirstElement $root @("calculatedField","totalField","parameter","template","groupTemplate","settingsVariant") $schNs
+			}
+
+			foreach ($node in $nodes) {
+				Insert-BeforeElement $root $node $refNode $childIndent
+			}
+
+			$desc = "$($parsed.source) > $($parsed.dest) on $($parsed.sourceExpr) = $($parsed.destExpr)"
+			if ($parsed.parameter) { $desc += " [param $($parsed.parameter)]" }
+			Write-Host "[OK] DataSetLink `"$desc`" added"
+		}
+	}
+
+	"clear-selection" {
+		$settings = Resolve-VariantSettings
+		$varName = Get-VariantName
+		$selection = Find-FirstElement $settings @("selection") $setNs
+		if ($selection) {
+			Clear-ContainerChildren $selection
+			Write-Host "[OK] Selection cleared in variant `"$varName`""
+		} else {
+			Write-Host "[INFO] No selection section in variant `"$varName`""
+		}
+	}
+
+	"clear-order" {
+		$settings = Resolve-VariantSettings
+		$varName = Get-VariantName
+		$orderEl = Find-FirstElement $settings @("order") $setNs
+		if ($orderEl) {
+			Clear-ContainerChildren $orderEl
+			Write-Host "[OK] Order cleared in variant `"$varName`""
+		} else {
+			Write-Host "[INFO] No order section in variant `"$varName`""
+		}
+	}
+
+	"clear-filter" {
+		$settings = Resolve-VariantSettings
+		$varName = Get-VariantName
+		$filterEl = Find-FirstElement $settings @("filter") $setNs
+		if ($filterEl) {
+			Clear-ContainerChildren $filterEl
+			Write-Host "[OK] Filter cleared in variant `"$varName`""
+		} else {
+			Write-Host "[INFO] No filter section in variant `"$varName`""
+		}
+	}
+
+	"modify-filter" {
+		$settings = Resolve-VariantSettings
+		$varName = Get-VariantName
+
+		foreach ($val in $values) {
+			$parsed = Parse-FilterShorthand $val
+
+			$filterEl = Find-FirstElement $settings @("filter") $setNs
+			if (-not $filterEl) {
+				Write-Host "[WARN] No filter section in variant `"$varName`""
+				continue
+			}
+
+			$filterItem = Find-ElementByChildValue $filterEl "item" "left" $parsed.field $setNs
+			if (-not $filterItem) {
+				Write-Host "[WARN] Filter for `"$($parsed.field)`" not found in variant `"$varName`""
+				continue
+			}
+
+			$itemIndent = Get-ChildIndent $filterItem
+
+			# Update comparisonType
+			Set-OrCreateChildElement $filterItem "comparisonType" $setNs $parsed.op $itemIndent
+
+			# Update right value
+			if ($null -ne $parsed.value) {
+				$vt = if ($parsed["valueType"]) { $parsed["valueType"] } else { "xs:string" }
+				Set-OrCreateChildElementWithAttr $filterItem "right" $setNs "$($parsed.value)" $vt $itemIndent
+			}
+
+			# Update use
+			if ($parsed.use -eq $false) {
+				Set-OrCreateChildElement $filterItem "use" $setNs "false" $itemIndent
+			} else {
+				# If explicitly not @off, remove use=false if exists
+				$useEl = $null
+				foreach ($ch in $filterItem.ChildNodes) {
+					if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq 'use' -and $ch.NamespaceURI -eq $setNs) {
+						$useEl = $ch; break
+					}
+				}
+				if ($useEl -and $useEl.InnerText -eq 'false') {
+					Remove-NodeWithWhitespace $useEl
+				}
+			}
+
+			# Update viewMode
+			if ($parsed.viewMode) {
+				Set-OrCreateChildElement $filterItem "viewMode" $setNs $parsed.viewMode $itemIndent
+			}
+
+			# Update userSettingID
+			if ($parsed.userSettingID) {
+				$uid = if ($parsed.userSettingID -eq "auto") { [System.Guid]::NewGuid().ToString() } else { $parsed.userSettingID }
+				Set-OrCreateChildElement $filterItem "userSettingID" $setNs $uid $itemIndent
+			}
+
+			Write-Host "[OK] Filter `"$($parsed.field)`" modified in variant `"$varName`""
+		}
+	}
+
+	"modify-dataParameter" {
+		$settings = Resolve-VariantSettings
+		$varName = Get-VariantName
+
+		foreach ($val in $values) {
+			$parsed = Parse-DataParamShorthand $val
+
+			$dpEl = Find-FirstElement $settings @("dataParameters") $setNs
+			if (-not $dpEl) {
+				Write-Host "[WARN] No dataParameters section in variant `"$varName`""
+				continue
+			}
+
+			$dpItem = Find-ElementByChildValue $dpEl "item" "parameter" $parsed.parameter $corNs
+			if (-not $dpItem) {
+				Write-Host "[WARN] DataParameter `"$($parsed.parameter)`" not found in variant `"$varName`""
+				continue
+			}
+
+			$itemIndent = Get-ChildIndent $dpItem
+
+			# Update value
+			if ($null -ne $parsed.value) {
+				# Remove existing value element first
+				$existingVal = $null
+				foreach ($ch in $dpItem.ChildNodes) {
+					if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq 'value' -and $ch.NamespaceURI -eq $corNs) {
+						$existingVal = $ch; break
+					}
+				}
+				if ($existingVal) {
+					Remove-NodeWithWhitespace $existingVal
+				}
+
+				# Build new value fragment
+				$valLines = @()
+				if ($parsed.value -is [hashtable] -and $parsed.value.variant) {
+					$valLines += "$itemIndent<dcscor:value xsi:type=`"v8:StandardPeriod`">"
+					$valLines += "$itemIndent`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$(Esc-Xml $parsed.value.variant)</v8:variant>"
+					$valLines += "$itemIndent</dcscor:value>"
+				} elseif ("$($parsed.value)" -match '^\d{4}-\d{2}-\d{2}T') {
+					$valLines += "$itemIndent<dcscor:value xsi:type=`"xs:dateTime`">$(Esc-Xml "$($parsed.value)")</dcscor:value>"
+				} elseif ("$($parsed.value)" -eq "true" -or "$($parsed.value)" -eq "false") {
+					$valLines += "$itemIndent<dcscor:value xsi:type=`"xs:boolean`">$(Esc-Xml "$($parsed.value)")</dcscor:value>"
+				} else {
+					$valLines += "$itemIndent<dcscor:value xsi:type=`"xs:string`">$(Esc-Xml "$($parsed.value)")</dcscor:value>"
+				}
+				$valXml = $valLines -join "`r`n"
+				$valNodes = Import-Fragment $xmlDoc $valXml
+				foreach ($node in $valNodes) {
+					Insert-BeforeElement $dpItem $node $null $itemIndent
+				}
+			}
+
+			# Update use
+			if ($parsed.use -eq $false) {
+				Set-OrCreateChildElement $dpItem "use" $corNs "false" $itemIndent
+			} else {
+				$useEl = $null
+				foreach ($ch in $dpItem.ChildNodes) {
+					if ($ch.NodeType -eq 'Element' -and $ch.LocalName -eq 'use' -and $ch.NamespaceURI -eq $corNs) {
+						$useEl = $ch; break
+					}
+				}
+				if ($useEl -and $useEl.InnerText -eq 'false') {
+					Remove-NodeWithWhitespace $useEl
+				}
+			}
+
+			# Update viewMode
+			if ($parsed.viewMode) {
+				Set-OrCreateChildElement $dpItem "viewMode" $setNs $parsed.viewMode $itemIndent
+			}
+
+			# Update userSettingID
+			if ($parsed.userSettingID) {
+				$uid = if ($parsed.userSettingID -eq "auto") { [System.Guid]::NewGuid().ToString() } else { $parsed.userSettingID }
+				Set-OrCreateChildElement $dpItem "userSettingID" $setNs $uid $itemIndent
+			}
+
+			Write-Host "[OK] DataParameter `"$($parsed.parameter)`" modified in variant `"$varName`""
+		}
+	}
+
+	"modify-field" {
+		$dsNode = Resolve-DataSet
+		$dsName = Get-DataSetName $dsNode
+
+		foreach ($val in $values) {
+			$parsed = Parse-FieldShorthand $val
+			$fieldName = $parsed.dataPath
+
+			# Find existing field
+			$fieldEl = Find-ElementByChildValue $dsNode "field" "dataPath" $fieldName $schNs
+			if (-not $fieldEl) {
+				Write-Host "[WARN] Field `"$fieldName`" not found in dataset `"$dsName`""
+				continue
+			}
+
+			# Read existing properties
+			$existing = Read-FieldProperties $fieldEl
+
+			# Merge: parsed overrides existing for non-empty values
+			$merged = @{
+				dataPath = $existing.dataPath
+				field = $existing.field
+				title = if ($parsed.title) { $parsed.title } else { $existing.title }
+				type = if ($parsed.type) { $parsed.type } else { $existing.type }
+				roles = if ($parsed.roles -and $parsed.roles.Count -gt 0) { $parsed.roles } else { $existing.roles }
+				restrict = if ($parsed.restrict -and $parsed.restrict.Count -gt 0) { $parsed.restrict } else { $existing.restrict }
+			}
+
+			# Remember position (NextSibling after whitespace)
+			$nextSib = $fieldEl.NextSibling
+			while ($nextSib -and ($nextSib.NodeType -eq 'Whitespace' -or $nextSib.NodeType -eq 'SignificantWhitespace')) {
+				$nextSib = $nextSib.NextSibling
+			}
+
+			# Remove old field
+			$childIndent = Get-ChildIndent $dsNode
+			Remove-NodeWithWhitespace $fieldEl
+
+			# Build new field fragment with merged data
+			$fragXml = Build-FieldFragment -parsed $merged -indent $childIndent
+			$nodes = Import-Fragment $xmlDoc $fragXml
+
+			# Insert at saved position
+			foreach ($node in $nodes) {
+				Insert-BeforeElement $dsNode $node $nextSib $childIndent
+			}
+
+			Write-Host "[OK] Field `"$fieldName`" modified in dataset `"$dsName`""
 		}
 	}
 
