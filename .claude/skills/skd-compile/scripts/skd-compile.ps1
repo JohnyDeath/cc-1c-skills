@@ -197,15 +197,15 @@ function Emit-ValueType {
 
 	# cfg: references (CatalogRef.XXX, DocumentRef.XXX, EnumRef.XXX, etc.)
 	if ($typeStr -match '^(CatalogRef|DocumentRef|EnumRef|ChartOfAccountsRef|ChartOfCharacteristicTypesRef)\.') {
-		X "$indent<v8:Type>cfg:$typeStr</v8:Type>"
+		X "$indent<v8:Type>cfg:$(Esc-Xml $typeStr)</v8:Type>"
 		return
 	}
 
 	# Fallback
 	if ($typeStr.Contains('.')) {
-		X "$indent<v8:Type>cfg:$typeStr</v8:Type>"
+		X "$indent<v8:Type>cfg:$(Esc-Xml $typeStr)</v8:Type>"
 	} else {
-		X "$indent<v8:Type>$typeStr</v8:Type>"
+		X "$indent<v8:Type>$(Esc-Xml $typeStr)</v8:Type>"
 	}
 }
 
@@ -465,7 +465,7 @@ function Emit-DataSources {
 	foreach ($ds in $dataSources) {
 		X "`t<dataSource>"
 		X "`t`t<name>$(Esc-Xml $ds.name)</name>"
-		X "`t`t<dataSourceType>$($ds.type)</dataSourceType>"
+		X "`t`t<dataSourceType>$(Esc-Xml $ds.type)</dataSourceType>"
 		X "`t</dataSource>"
 	}
 }
@@ -591,7 +591,7 @@ function Emit-Field {
 			X "$indent`t`t<dcscor:item xsi:type=`"dcsset:SettingsParameterValue`">"
 			X "$indent`t`t`t<dcscor:parameter>$(Esc-Xml $key)</dcscor:parameter>"
 			if ($key -eq "ГоризонтальноеПоложение") {
-				X "$indent`t`t`t<dcscor:value xsi:type=`"v8ui:HorizontalAlign`">$val</dcscor:value>"
+				X "$indent`t`t`t<dcscor:value xsi:type=`"v8ui:HorizontalAlign`">$(Esc-Xml $val)</dcscor:value>"
 			} else {
 				X "$indent`t`t`t<dcscor:value xsi:type=`"xs:string`">$(Esc-Xml $val)</dcscor:value>"
 			}
@@ -797,7 +797,7 @@ function Emit-SingleParam {
 
 	# Use
 	if ($p -isnot [string] -and $p.use) {
-		X "`t`t<use>$($p.use)</use>"
+		X "`t`t<use>$(Esc-Xml "$($p.use)")</use>"
 	}
 
 	X "`t</parameter>"
@@ -849,22 +849,22 @@ function Emit-ParamValue {
 	if ($type -eq "StandardPeriod") {
 		# val is a period variant string like "LastMonth"
 		X "$indent<value xsi:type=`"v8:StandardPeriod`">"
-		X "$indent`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$valStr</v8:variant>"
+		X "$indent`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$(Esc-Xml $valStr)</v8:variant>"
 		X "$indent</value>"
 	} elseif ($type -match '^date') {
-		X "$indent<value xsi:type=`"xs:dateTime`">$valStr</value>"
+		X "$indent<value xsi:type=`"xs:dateTime`">$(Esc-Xml $valStr)</value>"
 	} elseif ($type -eq "boolean") {
-		X "$indent<value xsi:type=`"xs:boolean`">$valStr</value>"
+		X "$indent<value xsi:type=`"xs:boolean`">$(Esc-Xml $valStr)</value>"
 	} elseif ($type -match '^decimal') {
-		X "$indent<value xsi:type=`"xs:decimal`">$valStr</value>"
+		X "$indent<value xsi:type=`"xs:decimal`">$(Esc-Xml $valStr)</value>"
 	} elseif ($type -match '^string') {
 		X "$indent<value xsi:type=`"xs:string`">$(Esc-Xml $valStr)</value>"
 	} else {
 		# Guess from value
 		if ($valStr -match '^\d{4}-\d{2}-\d{2}T') {
-			X "$indent<value xsi:type=`"xs:dateTime`">$valStr</value>"
+			X "$indent<value xsi:type=`"xs:dateTime`">$(Esc-Xml $valStr)</value>"
 		} elseif ($valStr -eq "true" -or $valStr -eq "false") {
-			X "$indent<value xsi:type=`"xs:boolean`">$valStr</value>"
+			X "$indent<value xsi:type=`"xs:boolean`">$(Esc-Xml $valStr)</value>"
 		} else {
 			X "$indent<value xsi:type=`"xs:string`">$(Esc-Xml $valStr)</value>"
 		}
@@ -899,7 +899,7 @@ function Emit-GroupTemplates {
 	foreach ($gt in $def.groupTemplates) {
 		X "`t<groupTemplate>"
 		X "`t`t<groupField>$(Esc-Xml "$($gt.groupField)")</groupField>"
-		X "`t`t<templateType>$($gt.templateType)</templateType>"
+		X "`t`t<templateType>$(Esc-Xml "$($gt.templateType)")</templateType>"
 		X "`t`t<template>$(Esc-Xml "$($gt.template)")</template>"
 		X "`t</groupTemplate>"
 	}
@@ -919,12 +919,12 @@ function Emit-Selection {
 				X "$indent`t<dcsset:item xsi:type=`"dcsset:SelectedItemAuto`"/>"
 			} else {
 				X "$indent`t<dcsset:item xsi:type=`"dcsset:SelectedItemField`">"
-				X "$indent`t`t<dcsset:field>$item</dcsset:field>"
+				X "$indent`t`t<dcsset:field>$(Esc-Xml $item)</dcsset:field>"
 				X "$indent`t</dcsset:item>"
 			}
 		} else {
 			X "$indent`t<dcsset:item xsi:type=`"dcsset:SelectedItemField`">"
-			X "$indent`t`t<dcsset:field>$($item.field)</dcsset:field>"
+			X "$indent`t`t<dcsset:field>$(Esc-Xml "$($item.field)")</dcsset:field>"
 			if ($item.title) {
 				X "$indent`t`t<dcsset:lwsTitle>"
 				X "$indent`t`t`t<v8:item>"
@@ -968,11 +968,11 @@ function Emit-FilterItem {
 		X "$indent`t<dcsset:use>false</dcsset:use>"
 	}
 
-	X "$indent`t<dcsset:left xsi:type=`"dcscor:Field`">$($item.field)</dcsset:left>"
+	X "$indent`t<dcsset:left xsi:type=`"dcscor:Field`">$(Esc-Xml "$($item.field)")</dcsset:left>"
 
 	$compType = $script:comparisonTypes["$($item.op)"]
 	if (-not $compType) { $compType = "$($item.op)" }
-	X "$indent`t<dcsset:comparisonType>$compType</dcsset:comparisonType>"
+	X "$indent`t<dcsset:comparisonType>$(Esc-Xml $compType)</dcsset:comparisonType>"
 
 	# Right value
 	if ($null -ne $item.value) {
@@ -1003,12 +1003,12 @@ function Emit-FilterItem {
 	}
 
 	if ($item.viewMode) {
-		X "$indent`t<dcsset:viewMode>$($item.viewMode)</dcsset:viewMode>"
+		X "$indent`t<dcsset:viewMode>$(Esc-Xml "$($item.viewMode)")</dcsset:viewMode>"
 	}
 
 	if ($item.userSettingID) {
 		$uid = if ("$($item.userSettingID)" -eq "auto") { New-Guid-String } else { "$($item.userSettingID)" }
-		X "$indent`t<dcsset:userSettingID>$uid</dcsset:userSettingID>"
+		X "$indent`t<dcsset:userSettingID>$(Esc-Xml $uid)</dcsset:userSettingID>"
 	}
 
 	X "$indent</dcsset:item>"
@@ -1067,7 +1067,7 @@ function Emit-Order {
 				if ($parts.Count -gt 1 -and $parts[1] -match '^(?i)desc$') { $dir = "Desc" }
 				elseif ($parts.Count -gt 1 -and $parts[1] -match '^(?i)asc$') { $dir = "Asc" }
 				X "$indent`t<dcsset:item xsi:type=`"dcsset:OrderItemField`">"
-				X "$indent`t`t<dcsset:field>$field</dcsset:field>"
+				X "$indent`t`t<dcsset:field>$(Esc-Xml $field)</dcsset:field>"
 				X "$indent`t`t<dcsset:orderType>$dir</dcsset:orderType>"
 				X "$indent`t</dcsset:item>"
 			}
@@ -1145,30 +1145,30 @@ function Emit-DataParameters {
 			if ($dp.value -is [PSCustomObject] -and $dp.value.variant) {
 				# StandardPeriod (object form from JSON)
 				X "$indent`t`t<dcscor:value xsi:type=`"v8:StandardPeriod`">"
-				X "$indent`t`t`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$($dp.value.variant)</v8:variant>"
+				X "$indent`t`t`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$(Esc-Xml "$($dp.value.variant)")</v8:variant>"
 				X "$indent`t`t</dcscor:value>"
 			} elseif ($dp.value -is [hashtable] -and $dp.value.variant) {
 				# StandardPeriod (hashtable from shorthand parser)
 				X "$indent`t`t<dcscor:value xsi:type=`"v8:StandardPeriod`">"
-				X "$indent`t`t`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$($dp.value.variant)</v8:variant>"
+				X "$indent`t`t`t<v8:variant xsi:type=`"v8:StandardPeriodVariant`">$(Esc-Xml "$($dp.value.variant)")</v8:variant>"
 				X "$indent`t`t</dcscor:value>"
 			} elseif ($dp.value -is [bool]) {
 				$bv = "$($dp.value)".ToLower()
-				X "$indent`t`t<dcscor:value xsi:type=`"xs:boolean`">$bv</dcscor:value>"
+				X "$indent`t`t<dcscor:value xsi:type=`"xs:boolean`">$(Esc-Xml $bv)</dcscor:value>"
 			} elseif ("$($dp.value)" -match '^\d{4}-\d{2}-\d{2}T') {
-				X "$indent`t`t<dcscor:value xsi:type=`"xs:dateTime`">$($dp.value)</dcscor:value>"
+				X "$indent`t`t<dcscor:value xsi:type=`"xs:dateTime`">$(Esc-Xml "$($dp.value)")</dcscor:value>"
 			} else {
 				X "$indent`t`t<dcscor:value xsi:type=`"xs:string`">$(Esc-Xml "$($dp.value)")</dcscor:value>"
 			}
 		}
 
 		if ($dp.viewMode) {
-			X "$indent`t`t<dcsset:viewMode>$($dp.viewMode)</dcsset:viewMode>"
+			X "$indent`t`t<dcsset:viewMode>$(Esc-Xml "$($dp.viewMode)")</dcsset:viewMode>"
 		}
 
 		if ($dp.userSettingID) {
 			$uid = if ("$($dp.userSettingID)" -eq "auto") { New-Guid-String } else { "$($dp.userSettingID)" }
-			X "$indent`t`t<dcsset:userSettingID>$uid</dcsset:userSettingID>"
+			X "$indent`t`t<dcsset:userSettingID>$(Esc-Xml $uid)</dcsset:userSettingID>"
 		}
 
 		X "$indent`t</dcscor:item>"
@@ -1187,7 +1187,7 @@ function Emit-GroupItems {
 	foreach ($field in $groupBy) {
 		if ($field -is [string]) {
 			X "$indent`t<dcsset:item xsi:type=`"dcsset:GroupItemField`">"
-			X "$indent`t`t<dcsset:field>$field</dcsset:field>"
+			X "$indent`t`t<dcsset:field>$(Esc-Xml $field)</dcsset:field>"
 			X "$indent`t`t<dcsset:groupType>Items</dcsset:groupType>"
 			X "$indent`t`t<dcsset:periodAdditionType>None</dcsset:periodAdditionType>"
 			X "$indent`t`t<dcsset:periodAdditionBegin xsi:type=`"xs:dateTime`">0001-01-01T00:00:00</dcsset:periodAdditionBegin>"
@@ -1196,11 +1196,11 @@ function Emit-GroupItems {
 		} else {
 			# Object form
 			X "$indent`t<dcsset:item xsi:type=`"dcsset:GroupItemField`">"
-			X "$indent`t`t<dcsset:field>$($field.field)</dcsset:field>"
+			X "$indent`t`t<dcsset:field>$(Esc-Xml "$($field.field)")</dcsset:field>"
 			$gt = if ($field.groupType) { "$($field.groupType)" } else { "Items" }
-			X "$indent`t`t<dcsset:groupType>$gt</dcsset:groupType>"
+			X "$indent`t`t<dcsset:groupType>$(Esc-Xml $gt)</dcsset:groupType>"
 			$pat = if ($field.periodAdditionType) { "$($field.periodAdditionType)" } else { "None" }
-			X "$indent`t`t<dcsset:periodAdditionType>$pat</dcsset:periodAdditionType>"
+			X "$indent`t`t<dcsset:periodAdditionType>$(Esc-Xml $pat)</dcsset:periodAdditionType>"
 			X "$indent`t`t<dcsset:periodAdditionBegin xsi:type=`"xs:dateTime`">0001-01-01T00:00:00</dcsset:periodAdditionBegin>"
 			X "$indent`t`t<dcsset:periodAdditionEnd xsi:type=`"xs:dateTime`">0001-01-01T00:00:00</dcsset:periodAdditionEnd>"
 			X "$indent`t</dcsset:item>"
