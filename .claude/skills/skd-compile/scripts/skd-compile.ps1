@@ -910,7 +910,7 @@ function Emit-GroupTemplates {
 # === Settings Variants ===
 
 function Emit-Selection {
-	param($items, [string]$indent)
+	param($items, [string]$indent, [switch]$skipAuto)
 
 	if (-not $items -or $items.Count -eq 0) { return }
 
@@ -918,7 +918,9 @@ function Emit-Selection {
 	foreach ($item in $items) {
 		if ($item -is [string]) {
 			if ($item -eq "Auto") {
-				X "$indent`t<dcsset:item xsi:type=`"dcsset:SelectedItemAuto`"/>"
+				if (-not $skipAuto) {
+					X "$indent`t<dcsset:item xsi:type=`"dcsset:SelectedItemAuto`"/>"
+				}
 			} else {
 				X "$indent`t<dcsset:item xsi:type=`"dcsset:SelectedItemField`">"
 				X "$indent`t`t<dcsset:field>$(Esc-Xml $item)</dcsset:field>"
@@ -1053,7 +1055,7 @@ function Emit-Filter {
 }
 
 function Emit-Order {
-	param($items, [string]$indent)
+	param($items, [string]$indent, [switch]$skipAuto)
 
 	if (-not $items -or $items.Count -eq 0) { return }
 
@@ -1061,7 +1063,9 @@ function Emit-Order {
 	foreach ($item in $items) {
 		if ($item -is [string]) {
 			if ($item -eq "Auto") {
-				X "$indent`t<dcsset:item xsi:type=`"dcsset:OrderItemAuto`"/>"
+				if (-not $skipAuto) {
+					X "$indent`t<dcsset:item xsi:type=`"dcsset:OrderItemAuto`"/>"
+				}
 			} else {
 				$parts = $item -split '\s+'
 				$field = $parts[0]
@@ -1409,9 +1413,9 @@ function Emit-SettingsVariants {
 
 		$s = $v.settings
 
-		# Selection
+		# Selection (Auto items only belong at group level, not top-level settings)
 		if ($s.selection) {
-			Emit-Selection -items $s.selection -indent "`t`t`t"
+			Emit-Selection -items $s.selection -indent "`t`t`t" -skipAuto
 		}
 
 		# Filter
@@ -1419,9 +1423,9 @@ function Emit-SettingsVariants {
 			Emit-Filter -items $s.filter -indent "`t`t`t"
 		}
 
-		# Order
+		# Order (Auto items only belong at group level, not top-level settings)
 		if ($s.order) {
-			Emit-Order -items $s.order -indent "`t`t`t"
+			Emit-Order -items $s.order -indent "`t`t`t" -skipAuto
 		}
 
 		# OutputParameters

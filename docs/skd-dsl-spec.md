@@ -420,7 +420,7 @@
 ```
 
 - Строка → `SelectedItemField`
-- `"Auto"` → `SelectedItemAuto`
+- `"Auto"` → `SelectedItemAuto` (только на уровне группировок; на верхнем уровне settings игнорируется)
 - Объект с `field`/`title` → `SelectedItemField` с `lwsTitle`
 
 ### filter
@@ -498,7 +498,7 @@
 - `"Field"` → `OrderItemField`, `orderType=Asc`
 - `"Field desc"` → `OrderItemField`, `orderType=Desc`
 - `"Field asc"` → `OrderItemField`, `orderType=Asc`
-- `"Auto"` → `OrderItemAuto`
+- `"Auto"` → `OrderItemAuto` (только на уровне группировок; на верхнем уровне settings игнорируется)
 
 ### outputParameters
 
