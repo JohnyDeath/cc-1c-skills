@@ -190,6 +190,12 @@ Ext/                               # Расширение конфигураци
 | Журнал документов | `<DocumentJournal>` |
 | Отчёт | `<Report>` |
 | Обработка | `<DataProcessor>` |
+| Определяемый тип | `<DefinedType>` |
+| Общий модуль | `<CommonModule>` |
+| Регламентное задание | `<ScheduledJob>` |
+| Подписка на событие | `<EventSubscription>` |
+| HTTP-сервис | `<HTTPService>` |
+| Веб-сервис | `<WebService>` |
 
 Атрибут `uuid` — уникальный идентификатор объекта.
 
@@ -1449,9 +1455,239 @@ XML-элемент: `<DocumentJournal>`. Категория InternalInfo: Docume
 
 ---
 
-## 20. Различия версий платформы
+## 20. Определяемые типы (DefinedTypes)
 
-### 20.1. Версия 2.17 → 2.20
+XML-элемент: `<DefinedType>`. Категория InternalInfo: DefinedType.
+
+### 20.1. Свойства
+
+Определяемый тип — именованный составной тип, используемый для унификации типов реквизитов:
+
+```xml
+<Properties>
+    <Name>ДенежныеСредстваВДокументах</Name>
+    <Synonym>...</Synonym>
+    <Comment/>
+    <Type>
+        <v8:Type>cfg:CatalogRef.БанковскиеСчета</v8:Type>
+        <v8:Type>cfg:CatalogRef.КассыККМ</v8:Type>
+        <v8:Type>cfg:CatalogRef.Кассы</v8:Type>
+    </Type>
+</Properties>
+```
+
+**ChildObjects** отсутствует.
+
+---
+
+## 21. Общие модули (CommonModules)
+
+XML-элемент: `<CommonModule>`.
+
+### 21.1. Свойства
+
+```xml
+<Properties>
+    <Name>ОбменДаннымиСервер</Name>
+    <Synonym>...</Synonym>
+    <Comment/>
+    <Global>false</Global>
+    <ClientManagedApplication>false</ClientManagedApplication>
+    <Server>true</Server>
+    <ExternalConnection>false</ExternalConnection>
+    <ClientOrdinaryApplication>false</ClientOrdinaryApplication>
+    <ServerCall>true</ServerCall>
+    <Privileged>false</Privileged>
+    <ReturnValuesReuse>DuringRequest</ReturnValuesReuse>
+</Properties>
+```
+
+| Свойство | Тип | Описание |
+|---|---|---|
+| `Global` | boolean | Глобальный модуль |
+| `Server` | boolean | Доступен на сервере |
+| `ServerCall` | boolean | Вызов сервера (из клиентского кода) |
+| `ClientManagedApplication` | boolean | Клиент управляемого приложения |
+| `ClientOrdinaryApplication` | boolean | Обычный клиент |
+| `ExternalConnection` | boolean | Внешнее соединение |
+| `Privileged` | boolean | Привилегированный режим |
+| `ReturnValuesReuse` | enum | `DontUse` \| `DuringRequest` \| `DuringSession` |
+
+**ChildObjects** отсутствует. Код модуля — в файле `Ext/Module.bsl`.
+
+---
+
+## 22. Регламентные задания (ScheduledJobs)
+
+XML-элемент: `<ScheduledJob>`.
+
+### 22.1. Свойства
+
+```xml
+<Properties>
+    <Name>АвтоматическоеЗакрытиеМесяца</Name>
+    <Synonym>...</Synonym>
+    <Comment/>
+    <MethodName>CommonModule.ЗакрытиеМесяца.АвтоматическоеЗакрытиеМесяцаРегламентноеЗадание</MethodName>
+    <Description>Автоматическое закрытие месяца</Description>
+    <Key/>
+    <Use>false</Use>
+    <Predefined>false</Predefined>
+    <RestartCountOnFailure>3</RestartCountOnFailure>
+    <RestartIntervalOnFailure>10</RestartIntervalOnFailure>
+</Properties>
+```
+
+| Свойство | Тип | Описание |
+|---|---|---|
+| `MethodName` | string | Метод вида `CommonModule.ИмяМодуля.ИмяПроцедуры` |
+| `Use` | boolean | Использование (включено/выключено) |
+| `Predefined` | boolean | Предопределённое |
+| `RestartCountOnFailure` | int | Количество перезапусков при аварийном завершении |
+| `RestartIntervalOnFailure` | int | Интервал перезапуска (секунды) |
+
+**ChildObjects** отсутствует.
+
+---
+
+## 23. Подписки на события (EventSubscriptions)
+
+XML-элемент: `<EventSubscription>`.
+
+### 23.1. Свойства
+
+```xml
+<Properties>
+    <Name>ПолныйРегистрацияУдаления</Name>
+    <Synonym>...</Synonym>
+    <Comment/>
+    <Source>
+        <v8:Type>cfg:DocumentObject.АвансовыйОтчет</v8:Type>
+        <v8:Type>cfg:CatalogObject.Контрагенты</v8:Type>
+        <!-- ... список типов-источников ... -->
+    </Source>
+    <Event>BeforeDelete</Event>
+    <Handler>CommonModule.ОбменДаннымиРИБСобытия.ПолныйЗарегистрироватьУдаленияПередУдалением</Handler>
+</Properties>
+```
+
+| Свойство | Тип | Описание |
+|---|---|---|
+| `Source` | `v8:Type[]` | Типы объектов-источников (в формате `cfg:{Тип}.{Имя}`) |
+| `Event` | enum | `BeforeWrite` \| `OnWrite` \| `AfterWrite` \| `BeforeDelete` \| `Posting` \| `UndoPosting` \| `FillCheckProcessing` и др. |
+| `Handler` | string | Обработчик вида `CommonModule.ИмяМодуля.ИмяПроцедуры` |
+
+Типы источников: `cfg:CatalogObject.Xxx`, `cfg:DocumentObject.Xxx`, `cfg:InformationRegisterRecordSet.Xxx`, `cfg:AccumulationRegisterRecordSet.Xxx` и др.
+
+**ChildObjects** отсутствует.
+
+---
+
+## 24. HTTP-сервисы (HTTPServices)
+
+XML-элемент: `<HTTPService>`. Трёхуровневая вложенность: сервис → шаблон URL → метод.
+
+### 24.1. Свойства
+
+```xml
+<Properties>
+    <Name>ExternalAPI</Name>
+    <Synonym>...</Synonym>
+    <Comment/>
+    <RootURL>api</RootURL>
+    <ReuseSessions>DontUse</ReuseSessions>
+    <SessionMaxAge>20</SessionMaxAge>
+</Properties>
+```
+
+### 24.2. Дочерние объекты: URLTemplate → Method
+
+```xml
+<ChildObjects>
+    <URLTemplate uuid="...">
+        <Properties>
+            <Name>ПоказателиМонитора</Name>
+            <Synonym>...</Synonym>
+            <Template>/v1/kpi/</Template>
+        </Properties>
+        <ChildObjects>
+            <Method uuid="...">
+                <Properties>
+                    <Name>Получить</Name>
+                    <Synonym>...</Synonym>
+                    <HTTPMethod>GET</HTTPMethod>
+                    <Handler>ПоказателиМонитораПолучить</Handler>
+                </Properties>
+            </Method>
+        </ChildObjects>
+    </URLTemplate>
+</ChildObjects>
+```
+
+Код обработчиков — в файле `Ext/Module.bsl`.
+
+---
+
+## 25. Веб-сервисы (WebServices)
+
+XML-элемент: `<WebService>`. Трёхуровневая вложенность: сервис → операция → параметр.
+
+### 25.1. Свойства
+
+```xml
+<Properties>
+    <Name>EnterpriseDataUpload_1_0_1_1</Name>
+    <Synonym>...</Synonym>
+    <Comment/>
+    <Namespace>http://www.1c.ru/SSL/EnterpriseDataUpload_1_0_1_1</Namespace>
+    <XDTOPackages>...</XDTOPackages>
+    <ReuseSessions>DontUse</ReuseSessions>
+    <SessionMaxAge>20</SessionMaxAge>
+</Properties>
+```
+
+### 25.2. Дочерние объекты: Operation → Parameter
+
+```xml
+<ChildObjects>
+    <Operation uuid="...">
+        <Properties>
+            <Name>TestConnection</Name>
+            <Synonym>...</Synonym>
+            <Comment>Проверка подключения</Comment>
+            <XDTOReturningValueType>xs:boolean</XDTOReturningValueType>
+            <Nillable>false</Nillable>
+            <Transactioned>false</Transactioned>
+            <ProcedureName>ПроверкаПодключения</ProcedureName>
+        </Properties>
+        <ChildObjects>
+            <Parameter uuid="...">
+                <Properties>
+                    <Name>ErrorMessage</Name>
+                    <Synonym>...</Synonym>
+                    <XDTOValueType>xs:string</XDTOValueType>
+                    <Nillable>true</Nillable>
+                    <TransferDirection>Out</TransferDirection>
+                </Properties>
+            </Parameter>
+        </ChildObjects>
+    </Operation>
+</ChildObjects>
+```
+
+| Свойство параметра | Тип | Описание |
+|---|---|---|
+| `XDTOValueType` | string | Тип XDTO (`xs:string`, `xs:boolean`, `xs:int`, `xs:base64Binary` и др.) |
+| `TransferDirection` | enum | `In` \| `Out` \| `InOut` |
+| `Nillable` | boolean | Допускает пустое значение |
+
+Код операций — в файле `Ext/Module.bsl`.
+
+---
+
+## 26. Различия версий платформы
+
+### 26.1. Версия 2.17 → 2.20
 
 Атрибут `version` корневого элемента `<MetaDataObject>`.
 
@@ -1479,7 +1715,7 @@ XML-элемент: `<DocumentJournal>`. Категория InternalInfo: Docume
 </TabularSection>
 ```
 
-### 20.2. Стабильные элементы
+### 26.2. Стабильные элементы
 
 Между версиями 8.3.20 → 8.3.24 → 8.3.27:
 - Структура каталогов **без изменений**
@@ -1489,7 +1725,7 @@ XML-элемент: `<DocumentJournal>`. Категория InternalInfo: Docume
 
 ---
 
-## 21. Сводная таблица: свойства по типам объектов
+## 27. Сводная таблица: свойства по типам объектов
 
 | Свойство | Cat | Doc | Enum | Const | InfoReg | AccReg | AcctReg | CalcReg | CoA | CoCT | CoCaT | BP | Task | EP | DJ | Rep | DP |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -1523,7 +1759,7 @@ XML-элемент: `<DocumentJournal>`. Категория InternalInfo: Docume
 
 ---
 
-## 22. Формат ссылок на объекты метаданных
+## 28. Формат ссылок на объекты метаданных
 
 В свойствах типа `DefaultObjectForm`, `InputByString`, `RegisterRecords`, `DataLockFields` и др. используется формат ссылок:
 
@@ -1545,7 +1781,7 @@ XML-элемент: `<DocumentJournal>`. Категория InternalInfo: Docume
 
 ---
 
-## 23. Кодировка
+## 29. Кодировка
 
 Все XML-файлы используют кодировку UTF-8 с BOM (байты `EF BB BF`):
 
