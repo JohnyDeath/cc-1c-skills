@@ -1,6 +1,6 @@
 ---
 name: meta-info
-description: Компактная сводка объекта метаданных 1С — структура, типы, флаги, операции, движения
+description: Компактная сводка объекта метаданных конфигурации 1С — структура, типы, флаги, операции, движения. Использовать при анализе XML-выгрузки конфигурации 1С (каталоги Catalogs, Documents, CommonModules, HTTPServices и т.д.).
 argument-hint: <ObjectPath> [-Mode overview|brief|full] [-Name <элемент>]
 allowed-tools:
   - Bash
@@ -10,7 +10,7 @@ allowed-tools:
 
 # /meta-info — Сводка объекта метаданных 1С
 
-Читает XML-файл объекта метаданных конфигурации 1С и выводит компактную сводку. Заменяет необходимость читать тысячи строк XML.
+Читает XML-файл объекта метаданных конфигурации 1С и выводит компактную сводку.
 
 ## Параметры и команда
 
@@ -49,50 +49,41 @@ powershell.exe -NoProfile -File .claude\skills\meta-info\scripts\meta-info.ps1 -
 
 ```powershell
 # Справочник — overview
-... -ObjectPath Catalogs\Валюты\Валюты.xml
+... -ObjectPath Catalogs/Валюты/Валюты.xml
 
 # Документ — полная сводка с колонками ТЧ, движениями, формами
-... -ObjectPath Documents\АвансовыйОтчет\АвансовыйОтчет.xml -Mode full
+... -ObjectPath Documents/АвансовыйОтчет/АвансовыйОтчет.xml -Mode full
 
 # Регистр сведений — краткая сводка
-... -ObjectPath InformationRegisters\КурсыВалют\КурсыВалют.xml -Mode brief
+... -ObjectPath InformationRegisters/КурсыВалют/КурсыВалют.xml -Mode brief
 
 # Drill-down в ТЧ документа
-... -ObjectPath Documents\АвансовыйОтчет\АвансовыйОтчет.xml -Name Товары
+... -ObjectPath Documents/АвансовыйОтчет/АвансовыйОтчет.xml -Name Товары
 
 # Drill-down в реквизит
-... -ObjectPath Catalogs\Валюты\Валюты.xml -Name ОсновнаяВалюта
+... -ObjectPath Catalogs/Валюты/Валюты.xml -Name ОсновнаяВалюта
 
 # Общий модуль — флаги контекста и повторное использование
-... -ObjectPath CommonModules\ОбщегоНазначения\ОбщегоНазначения.xml
+... -ObjectPath CommonModules/ОбщегоНазначения/ОбщегоНазначения.xml
 
 # HTTP-сервис — шаблоны URL и методы
-... -ObjectPath HTTPServices\ExternalAPI\ExternalAPI.xml
+... -ObjectPath HTTPServices/ExternalAPI/ExternalAPI.xml
 
 # HTTP-сервис — drill-down в шаблон URL
-... -ObjectPath HTTPServices\ExternalAPI\ExternalAPI.xml -Name АктуальныеЗадачи
+... -ObjectPath HTTPServices/ExternalAPI/ExternalAPI.xml -Name АктуальныеЗадачи
 
 # Веб-сервис — операции с параметрами
-... -ObjectPath WebServices\EnterpriseDataUpload_1_0_1_1\EnterpriseDataUpload_1_0_1_1.xml
+... -ObjectPath WebServices/EnterpriseDataUpload_1_0_1_1/EnterpriseDataUpload_1_0_1_1.xml
 
 # Веб-сервис — drill-down в операцию
-... -ObjectPath WebServices\EnterpriseDataUpload_1_0_1_1\EnterpriseDataUpload_1_0_1_1.xml -Name TestConnection
+... -ObjectPath WebServices/EnterpriseDataUpload_1_0_1_1/EnterpriseDataUpload_1_0_1_1.xml -Name TestConnection
 
 # Подписка на событие — full раскрывает список источников
-... -ObjectPath EventSubscriptions\ПолныйРегистрацияУдаления\ПолныйРегистрацияУдаления.xml -Mode full
+... -ObjectPath EventSubscriptions/ПолныйРегистрацияУдаления/ПолныйРегистрацияУдаления.xml -Mode full
 
 # Регламентное задание
-... -ObjectPath ScheduledJobs\АвтоматическоеЗакрытиеМесяца\АвтоматическоеЗакрытиеМесяца.xml
+... -ObjectPath ScheduledJobs/АвтоматическоеЗакрытиеМесяца/АвтоматическоеЗакрытиеМесяца.xml
 
 # Определяемый тип
-... -ObjectPath DefinedTypes\GLN\GLN.xml
-```
-
-## Верификация
-
-```
-/meta-info <path>                           — overview (точка входа)
-/meta-info <path> -Mode brief               — краткая сводка
-/meta-info <path> -Mode full                — полная сводка
-/meta-info <path> -Name <имя>               — drill-down
+... -ObjectPath DefinedTypes/GLN/GLN.xml
 ```
