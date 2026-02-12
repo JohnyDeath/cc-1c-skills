@@ -1,6 +1,6 @@
 ---
 name: meta-info
-description: Структура объекта метаданных 1С из XML-выгрузки: реквизиты, типы, флаги, операции, движения
+description: Структура объекта метаданных 1С из XML-выгрузки конфигурации
 argument-hint: <ObjectPath> [-Mode overview|brief|full] [-Name <элемент>]
 allowed-tools:
   - Bash
