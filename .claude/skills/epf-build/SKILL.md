@@ -1,6 +1,6 @@
 ---
 name: epf-build
-description: Собрать внешнюю обработку 1С (EPF) из XML-исходников
+description: Собрать внешнюю обработку 1С (EPF/ERF) из XML-исходников
 argument-hint: <ProcessorName>
 allowed-tools:
   - Bash
@@ -11,7 +11,7 @@ allowed-tools:
 
 # /epf-build — Сборка обработки
 
-Собирает EPF-файл из XML-исходников с помощью платформы 1С.
+Собирает EPF-файл из XML-исходников с помощью платформы 1С. Та же команда CLI работает и для внешних отчётов (ERF) — см. `/erf-build`.
 
 ## Usage
 

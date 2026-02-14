@@ -1,7 +1,7 @@
 ---
-name: epf-add-template
-description: Добавить макет к внешней обработке 1С
-argument-hint: <ProcessorName> <TemplateName> <TemplateType>
+name: template-add
+description: Добавить макет к объекту 1С (обработка, отчёт, справочник, документ и др.)
+argument-hint: <ObjectName> <TemplateName> <TemplateType>
 allowed-tools:
   - Bash
   - Read
@@ -11,28 +11,29 @@ allowed-tools:
   - Grep
 ---
 
-# /epf-add-template — Добавление макета
+# /template-add — Добавление макета
 
-Создаёт макет указанного типа и регистрирует его в корневом XML обработки.
+Создаёт макет указанного типа и регистрирует его в корневом XML объекта.
 
 ## Usage
 
 ```
-/epf-add-template <ProcessorName> <TemplateName> <TemplateType>
+/template-add <ObjectName> <TemplateName> <TemplateType>
 ```
 
 | Параметр      | Обязательный | По умолчанию    | Описание                                         |
 |---------------|:------------:|-----------------|--------------------------------------------------|
-| ProcessorName | да           | —               | Имя обработки                                    |
+| ObjectName    | да           | —               | Имя объекта                                      |
 | TemplateName  | да           | —               | Имя макета                                       |
 | TemplateType  | да           | —               | Тип: HTML, Text, SpreadsheetDocument, BinaryData, DataCompositionSchema |
 | Synonym       | нет          | = TemplateName  | Синоним макета                                   |
 | SrcDir        | нет          | `src`           | Каталог исходников                               |
+| --SetMainSKD  | нет          | —               | Принудительно установить MainDataCompositionSchema |
 
 ## Команда
 
 ```powershell
-pwsh -NoProfile -File .claude/skills/epf-add-template/scripts/add-template.ps1 -ProcessorName "<ProcessorName>" -TemplateName "<TemplateName>" -TemplateType "<TemplateType>" [-Synonym "<Synonym>"] [-SrcDir "<SrcDir>"]
+powershell.exe -NoProfile -File .claude\skills\template-add\scripts\add-template.ps1 -ObjectName "<ObjectName>" -TemplateName "<TemplateName>" -TemplateType "<TemplateType>" [-Synonym "<Synonym>"] [-SrcDir "<SrcDir>"] [-SetMainSKD]
 ```
 
 ## Маппинг типов
@@ -58,10 +59,16 @@ pwsh -NoProfile -File .claude/skills/epf-add-template/scripts/add-template.ps1 -
 
 Если пользователь указал имя макета без префикса, но контекст — печатная форма, **добавь префикс `ПФ_MXL_` автоматически** и сообщи об этом.
 
+## MainDataCompositionSchema (авто)
+
+При добавлении макета типа `DataCompositionSchema` к `ExternalReport` или `Report`:
+- Если `MainDataCompositionSchema` пуст — автоматически заполняется ссылкой на макет
+- Используй `--SetMainSKD` чтобы перезаписать существующее значение
+
 ## Что создаётся
 
 ```
-<SrcDir>/<ProcessorName>/Templates/
+<SrcDir>/<ObjectName>/Templates/
 ├── <TemplateName>.xml              # Метаданные макета (1 UUID)
 └── <TemplateName>/
     └── Ext/
@@ -70,4 +77,5 @@ pwsh -NoProfile -File .claude/skills/epf-add-template/scripts/add-template.ps1 -
 
 ## Что модифицируется
 
-- `<SrcDir>/<ProcessorName>.xml` — добавляется `<Template>` в конец `ChildObjects`
+- `<SrcDir>/<ObjectName>.xml` — добавляется `<Template>` в конец `ChildObjects`
+- Для ExternalReport/Report: может обновляться `MainDataCompositionSchema`

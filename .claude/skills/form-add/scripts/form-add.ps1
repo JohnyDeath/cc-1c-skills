@@ -41,6 +41,7 @@ if (-not $metaDataObject) {
 
 $supportedTypes = @(
 	"Document", "Catalog", "DataProcessor", "Report",
+	"ExternalDataProcessor", "ExternalReport",
 	"InformationRegister", "ChartOfAccounts", "ChartOfCharacteristicTypes",
 	"ExchangePlan", "BusinessProcess", "Task"
 )
@@ -89,7 +90,7 @@ switch ($Purpose) {
 }
 
 $objectLikeTypes = @("Document", "Catalog", "ChartOfAccounts", "ChartOfCharacteristicTypes", "ExchangePlan", "BusinessProcess", "Task")
-$processorLikeTypes = @("DataProcessor", "Report")
+$processorLikeTypes = @("DataProcessor", "Report", "ExternalDataProcessor", "ExternalReport")
 
 switch ($Purpose) {
 	"Object" {
@@ -235,6 +236,8 @@ if ($Purpose -eq "List" -or $Purpose -eq "Choice") {
 		"Catalog"                     = "CatalogObject"
 		"DataProcessor"               = "DataProcessorObject"
 		"Report"                      = "ReportObject"
+		"ExternalDataProcessor"       = "ExternalDataProcessorObject"
+		"ExternalReport"              = "ExternalReportObject"
 		"ChartOfAccounts"             = "ChartOfAccountsObject"
 		"ChartOfCharacteristicTypes"  = "ChartOfCharacteristicTypesObject"
 		"ExchangePlan"                = "ExchangePlanObject"

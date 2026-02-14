@@ -39,7 +39,7 @@ powershell.exe -NoProfile -File .claude\skills\form-add\scripts\form-add.ps1 -Ob
 
 | Purpose | Допустимые типы объектов | Основной реквизит | DefaultForm-свойство |
 |---------|-------------------------|-------------------|---------------------|
-| Object  | Document, Catalog, DataProcessor, Report, ChartOf*, ExchangePlan, BusinessProcess, Task | Объект (тип: *Object.Имя) | DefaultObjectForm (DefaultForm для DataProcessor/Report) |
+| Object  | Document, Catalog, DataProcessor, Report, ExternalDataProcessor, ExternalReport, ChartOf*, ExchangePlan, BusinessProcess, Task | Объект (тип: *Object.Имя) | DefaultObjectForm (DefaultForm для DataProcessor/Report/ExternalDataProcessor/ExternalReport) |
 | List    | Все кроме DataProcessor | Список (DynamicList) | DefaultListForm |
 | Choice  | Document, Catalog, ChartOf*, ExchangePlan, BusinessProcess, Task | Список (DynamicList) | DefaultChoiceForm |
 | Record  | InformationRegister | Запись (InformationRegisterRecordManager) | DefaultRecordForm |
@@ -62,7 +62,7 @@ powershell.exe -NoProfile -File .claude\skills\form-add\scripts\form-add.ps1 -Ob
 
 ## Поддерживаемые типы объектов
 
-Document, Catalog, DataProcessor, Report, InformationRegister, ChartOfAccounts, ChartOfCharacteristicTypes, ExchangePlan, BusinessProcess, Task
+Document, Catalog, DataProcessor, Report, ExternalDataProcessor, ExternalReport, InformationRegister, ChartOfAccounts, ChartOfCharacteristicTypes, ExchangePlan, BusinessProcess, Task
 
 ## Примеры
 

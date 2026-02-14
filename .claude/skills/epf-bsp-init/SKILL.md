@@ -204,5 +204,5 @@ allowed-tools:
 
 - Добавить ещё команду: `/epf-bsp-add-command`
 - Добавить форму: `/epf-add-form`
-- Добавить макет: `/epf-add-template`
+- Добавить макет: `/template-add`
 - Собрать EPF: `/epf-build`

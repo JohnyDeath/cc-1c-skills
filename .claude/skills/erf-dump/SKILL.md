@@ -1,7 +1,7 @@
 ---
-name: epf-dump
-description: Разобрать EPF-файл обработки 1С (EPF/ERF) в XML-исходники
-argument-hint: <EpfFile>
+name: erf-dump
+description: Разобрать ERF-файл отчёта 1С в XML-исходники
+argument-hint: <ErfFile>
 allowed-tools:
   - Bash
   - Read
@@ -9,19 +9,19 @@ allowed-tools:
   - Grep
 ---
 
-# /epf-dump — Разборка обработки
+# /erf-dump — Разборка отчёта
 
-Разбирает EPF-файл во XML-исходники с помощью платформы 1С (иерархический формат). Та же команда CLI работает и для внешних отчётов (ERF) — см. `/erf-dump`.
+Разбирает ERF-файл во XML-исходники с помощью платформы 1С (иерархический формат). Использует ту же команду CLI, что и `/epf-dump`.
 
 ## Usage
 
 ```
-/epf-dump <EpfFile> [OutDir]
+/erf-dump <ErfFile> [OutDir]
 ```
 
 | Параметр | Обязательный | По умолчанию | Описание                            |
 |----------|:------------:|--------------|-------------------------------------|
-| EpfFile  | да           | —            | Путь к EPF-файлу                    |
+| ErfFile  | да           | —            | Путь к ERF-файлу                    |
 | OutDir   | нет          | `src`        | Каталог для выгрузки исходников     |
 
 ## Переменные окружения
@@ -39,10 +39,10 @@ allowed-tools:
 "%V8_PATH%\1cv8.exe" CREATEINFOBASE File="%V8_BASE%"
 ```
 
-### 2. Разборка EPF в XML
+### 2. Разборка ERF в XML
 
 ```cmd
-"%V8_PATH%\1cv8.exe" DESIGNER /F "%V8_BASE%" /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "<OutDir>" "<EpfFile>" -Format Hierarchical /Out "<OutDir>\dump.log"
+"%V8_PATH%\1cv8.exe" DESIGNER /F "%V8_BASE%" /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "<OutDir>" "<ErfFile>" -Format Hierarchical /Out "<OutDir>\dump.log"
 ```
 
 ## Коды возврата
@@ -86,5 +86,5 @@ $env:V8_BASE = ".\base"
 & "$env:V8_PATH\1cv8.exe" CREATEINFOBASE "File=$env:V8_BASE"
 
 # Разобрать
-& "$env:V8_PATH\1cv8.exe" DESIGNER /F $env:V8_BASE /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "src" "build\МояОбработка.epf" -Format Hierarchical /Out "build\dump.log"
+& "$env:V8_PATH\1cv8.exe" DESIGNER /F $env:V8_BASE /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "src" "build\МойОтчёт.erf" -Format Hierarchical /Out "build\dump.log"
 ```

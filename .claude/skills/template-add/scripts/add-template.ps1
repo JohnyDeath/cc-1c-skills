@@ -1,8 +1,9 @@
-﻿# epf-add-template v1.0 — Add template to 1C processor
+﻿# template-add v1.1 — Add template to 1C object
 # Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 param(
 	[Parameter(Mandatory)]
-	[string]$ProcessorName,
+	[Alias("ProcessorName")]
+	[string]$ObjectName,
 
 	[Parameter(Mandatory)]
 	[string]$TemplateName,
@@ -13,7 +14,9 @@ param(
 
 	[string]$Synonym = $TemplateName,
 
-	[string]$SrcDir = "src"
+	[string]$SrcDir = "src",
+
+	[switch]$SetMainSKD
 )
 
 $ErrorActionPreference = "Stop"
@@ -32,13 +35,13 @@ $tmpl = $typeMap[$TemplateType]
 
 # --- Проверки ---
 
-$rootXmlPath = Join-Path $SrcDir "$ProcessorName.xml"
+$rootXmlPath = Join-Path $SrcDir "$ObjectName.xml"
 if (-not (Test-Path $rootXmlPath)) {
 	Write-Error "Корневой файл обработки не найден: $rootXmlPath"
 	exit 1
 }
 
-$processorDir = Join-Path $SrcDir $ProcessorName
+$processorDir = Join-Path $SrcDir $ObjectName
 $templatesDir = Join-Path $processorDir "Templates"
 $templateMetaPath = Join-Path $templatesDir "$TemplateName.xml"
 
@@ -172,6 +175,36 @@ if ($childObjects.ChildNodes.Count -eq 0) {
 	}
 }
 
+# --- 4. MainDataCompositionSchema (для ExternalReport / Report) ---
+
+$mainDCSUpdated = $false
+if ($TemplateType -eq "DataCompositionSchema") {
+	# Определяем корневой элемент объекта
+	$reportLikeTypes = @("ExternalReport", "Report")
+	$objectTypeNode = $null
+	$objectTypeName = $null
+	foreach ($rt in $reportLikeTypes) {
+		$node = $xmlDoc.SelectSingleNode("//md:$rt", $nsMgr)
+		if ($node) {
+			$objectTypeNode = $node
+			$objectTypeName = $rt
+			break
+		}
+	}
+
+	if ($objectTypeNode) {
+		$mainDCS = $xmlDoc.SelectSingleNode("//md:${objectTypeName}/md:Properties/md:MainDataCompositionSchema", $nsMgr)
+		if ($mainDCS) {
+			$isEmpty = [string]::IsNullOrWhiteSpace($mainDCS.InnerText)
+			if ($isEmpty -or $SetMainSKD) {
+				$objName = $xmlDoc.SelectSingleNode("//md:${objectTypeName}/md:Properties/md:Name", $nsMgr).InnerText
+				$mainDCS.InnerText = "$objectTypeName.$objName.Template.$TemplateName"
+				$mainDCSUpdated = $true
+			}
+		}
+	}
+}
+
 # Сохранить с BOM
 $settings = New-Object System.Xml.XmlWriterSettings
 $settings.Encoding = $encBom
@@ -186,3 +219,6 @@ $stream.Close()
 Write-Host "[OK] Создан макет: $TemplateName ($TemplateType)"
 Write-Host "     Метаданные: $templateMetaPath"
 Write-Host "     Содержимое: $templateFilePath"
+if ($mainDCSUpdated) {
+	Write-Host "     MainDataCompositionSchema: $($mainDCS.InnerText)"
+}

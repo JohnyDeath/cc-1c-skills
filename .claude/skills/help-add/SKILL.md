@@ -1,7 +1,7 @@
 ---
-name: epf-add-help
-description: Добавить встроенную справку к внешней обработке 1С
-argument-hint: <ProcessorName>
+name: help-add
+description: Добавить встроенную справку к объекту 1С (обработка, отчёт, справочник, документ и др.)
+argument-hint: <ObjectName>
 allowed-tools:
   - Bash
   - Read
@@ -11,32 +11,32 @@ allowed-tools:
   - Grep
 ---
 
-# /epf-add-help — Добавление справки
+# /help-add — Добавление справки
 
-Добавляет встроенную справку к обработке: файл метаданных `Help.xml`, HTML-страницу и при необходимости обновляет метаданные форм.
+Добавляет встроенную справку к объекту: файл метаданных `Help.xml`, HTML-страницу и при необходимости обновляет метаданные форм.
 
 ## Usage
 
 ```
-/epf-add-help <ProcessorName> [Lang] [SrcDir]
+/help-add <ObjectName> [Lang] [SrcDir]
 ```
 
-| Параметр      | Обязательный | По умолчанию | Описание                            |
-|---------------|:------------:|--------------|-------------------------------------|
-| ProcessorName | да           | —            | Имя обработки                       |
-| Lang          | нет          | `ru`         | Код языка справки                   |
-| SrcDir        | нет          | `src`        | Каталог исходников                  |
+| Параметр   | Обязательный | По умолчанию | Описание                            |
+|------------|:------------:|--------------|-------------------------------------|
+| ObjectName | да           | —            | Имя объекта                         |
+| Lang       | нет          | `ru`         | Код языка справки                   |
+| SrcDir     | нет          | `src`        | Каталог исходников                  |
 
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude/skills/epf-add-help/scripts/add-help.ps1 -ProcessorName "<ProcessorName>" [-Lang "<Lang>"] [-SrcDir "<SrcDir>"]
+powershell.exe -NoProfile -File .claude\skills\help-add\scripts\add-help.ps1 -ObjectName "<ObjectName>" [-Lang "<Lang>"] [-SrcDir "<SrcDir>"]
 ```
 
 ## Что создаётся
 
 ```
-<SrcDir>/<ProcessorName>/
+<SrcDir>/<ObjectName>/
     Ext/
         Help.xml                    # Метаданные справки (namespace extrnprops)
         Help/
@@ -49,13 +49,13 @@ powershell.exe -NoProfile -File .claude/skills/epf-add-help/scripts/add-help.ps1
 
 ## Что модифицируется
 
-- Если в метаданных формы (`Forms/<FormName>.xml`) отсутствует `<IncludeHelpInContents>` — скрипт добавит `<IncludeHelpInContents>false</IncludeHelpInContents>` после `<FormType>`. Для форм, созданных через `/epf-add-form`, элемент уже есть.
+- Если в метаданных формы (`Forms/<FormName>.xml`) отсутствует `<IncludeHelpInContents>` — скрипт добавит `<IncludeHelpInContents>false</IncludeHelpInContents>` после `<FormType>`. Для форм, созданных через `/form-add`, элемент уже есть.
 
 ## Кнопка справки на форме
 
 После создания справки для её вызова нужна кнопка на форме. Добавь кнопку `Form.StandardCommand.Help` в AutoCommandBar формы (`Forms/<FormName>/Ext/Form.xml`).
 
-### Текущая структура AutoCommandBar (созданная epf-add-form)
+### Текущая структура AutoCommandBar (созданная form-add)
 
 ```xml
 <AutoCommandBar name="ФормаКоманднаяПанель" id="-1">
@@ -89,4 +89,4 @@ powershell.exe -NoProfile -File .claude/skills/epf-add-help/scripts/add-help.ps1
 
 ## Редактирование справки
 
-После создания содержимое справки — обычный HTML. Отредактируй `Ext/Help/ru.html` в соответствии с назначением обработки. Поддерживается стандартная HTML-разметка: `<h1>`..`<h4>`, `<p>`, `<ul>`, `<ol>`, `<table>`, `<strong>`, `<em>`, `<a>`, `<pre>`.
+После создания содержимое справки — обычный HTML. Отредактируй `Ext/Help/ru.html` в соответствии с назначением объекта. Поддерживается стандартная HTML-разметка: `<h1>`..`<h4>`, `<p>`, `<ul>`, `<ol>`, `<table>`, `<strong>`, `<em>`, `<a>`, `<pre>`.

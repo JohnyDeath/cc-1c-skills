@@ -50,5 +50,6 @@ pwsh -NoProfile -File .claude/skills/epf-init/scripts/init.ps1 -Name "<Name>" [-
 ## Дальнейшие шаги
 
 - Добавить форму: `/epf-add-form`
-- Добавить макет: `/epf-add-template`
+- Добавить макет: `/template-add`
+- Добавить справку: `/help-add`
 - Собрать EPF: `/epf-build`
