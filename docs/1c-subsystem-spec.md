@@ -37,7 +37,30 @@ Subsystems/
 - Вложенные подсистемы хранятся в `<Имя>/Subsystems/` — рекурсивно повторяя ту же структуру
 - Глубина вложенности не ограничена (на практике до 3–4 уровней)
 
-### 1.2. Командный интерфейс конфигурации (корневой)
+### 1.2. Группы команд (CommandGroups)
+
+```
+CommandGroups/
+├── Документы.xml
+├── Отчеты.xml
+├── Печать.xml
+└── ...
+```
+
+Плоская структура — только XML-файлы, без подкаталогов.
+
+### 1.3. Общие команды (CommonCommands)
+
+```
+CommonCommands/
+├── АнализСчета.xml                     # Метаданные
+├── АнализСчета/
+│   └── Ext/
+│       └── CommandModule.bsl           # Модуль команды
+└── ...
+```
+
+### 1.4. Командный интерфейс конфигурации (корневой)
 
 ```
 Ext/
@@ -426,11 +449,346 @@ Ext/
 
 ---
 
-## 5. Формат ссылок на команды
+## 5. Формат группы команд (CommandGroup)
+
+### 5.1. Структура каталогов
+
+```
+CommandGroups/
+├── Документы.xml
+├── Отчеты.xml
+├── Печать.xml
+├── Настройки.xml
+└── ...
+```
+
+Плоская структура — только XML-файлы, без подкаталогов и модулей.
+
+### 5.2. Общая структура XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="..." version="2.17">
+    <CommandGroup uuid="<UUID>">
+        <Properties>
+            <Name>Документы</Name>
+            <Synonym>...</Synonym>
+            <Comment/>
+            <Representation>Auto</Representation>
+            <ToolTip>...</ToolTip>
+            <Picture>...</Picture>
+            <Category>ActionsPanel</Category>
+        </Properties>
+    </CommandGroup>
+</MetaDataObject>
+```
+
+### 5.3. Свойства (Properties)
+
+| Свойство | Тип | Обязательно | Описание |
+|---|---|---|---|
+| `Name` | string | да | Программное имя (CamelCase) |
+| `Synonym` | LocalString | да | Отображаемое имя |
+| `Comment` | string | да | Комментарий. Обычно пустой тег |
+| `Representation` | enum | да | Способ отображения |
+| `ToolTip` | LocalString | да | Подсказка. Пустой тег если не задана |
+| `Picture` | Picture | да | Иконка. Пустой тег если не задана |
+| `Category` | enum | да | Категория размещения |
+
+#### Representation
+
+| Значение | Описание |
+|---|---|
+| `Auto` | По умолчанию (наиболее частое) |
+| `Picture` | Только картинка |
+| `PictureAndText` | Картинка с текстом |
+
+#### Category
+
+| Значение | Описание |
+|---|---|
+| `ActionsPanel` | Панель действий (главное меню раздела) |
+| `FormCommandBar` | Командная панель формы |
+| `NavigationPanel` | Панель навигации |
+
+#### Picture (расширенный формат)
+
+```xml
+<Picture>
+    <xr:Ref>StdPicture.Print</xr:Ref>
+    <xr:LoadTransparent>true</xr:LoadTransparent>
+    <xr:TransparentPixel x="7" y="5"/>          <!-- опционально -->
+</Picture>
+```
+
+- `xr:Ref` — ссылка на картинку: `StdPicture.<Имя>`, `CommonPicture.<Имя>`, или `0` (числовая ссылка)
+- `xr:LoadTransparent` — загружать с прозрачностью
+- `xr:TransparentPixel` — координаты прозрачного пикселя (опционально)
+
+### 5.4. Пример: минимальная группа
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="..." version="2.17">
+    <CommandGroup uuid="774911fc-5b94-4ac7-8923-fd317727c671">
+        <Properties>
+            <Name>Документы</Name>
+            <Synonym>
+                <v8:item>
+                    <v8:lang>ru</v8:lang>
+                    <v8:content>Документы</v8:content>
+                </v8:item>
+            </Synonym>
+            <Comment/>
+            <Representation>Auto</Representation>
+            <ToolTip/>
+            <Picture/>
+            <Category>ActionsPanel</Category>
+        </Properties>
+    </CommandGroup>
+</MetaDataObject>
+```
+
+### 5.5. Пример: группа с картинкой и подсказкой
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="..." version="2.17">
+    <CommandGroup uuid="ac39b903-0c60-417e-a50f-49ed375424f5">
+        <Properties>
+            <Name>Печать</Name>
+            <Synonym>
+                <v8:item>
+                    <v8:lang>ru</v8:lang>
+                    <v8:content>Печать</v8:content>
+                </v8:item>
+            </Synonym>
+            <Comment>Печать</Comment>
+            <Representation>Auto</Representation>
+            <ToolTip>
+                <v8:item>
+                    <v8:lang>ru</v8:lang>
+                    <v8:content>Печать</v8:content>
+                </v8:item>
+            </ToolTip>
+            <Picture>
+                <xr:Ref>StdPicture.Print</xr:Ref>
+                <xr:LoadTransparent>true</xr:LoadTransparent>
+            </Picture>
+            <Category>FormCommandBar</Category>
+        </Properties>
+    </CommandGroup>
+</MetaDataObject>
+```
+
+---
+
+## 6. Формат общей команды (CommonCommand)
+
+### 6.1. Структура каталогов
+
+```
+CommonCommands/
+├── АнализСчета.xml                     # Метаданные команды
+├── АнализСчета/
+│   └── Ext/
+│       └── CommandModule.bsl           # Модуль команды
+├── НастройкиСинхронизации.xml
+├── НастройкиСинхронизации/
+│   └── Ext/
+│       └── CommandModule.bsl
+└── ...
+```
+
+Каждая команда состоит из:
+- `<Имя>.xml` — определение метаданных (обязательно)
+- `<Имя>/Ext/CommandModule.bsl` — модуль реализации (обязательно)
+
+### 6.2. Общая структура XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="..." version="2.17">
+    <CommonCommand uuid="<UUID>">
+        <Properties>
+            <Name>АнализСчета</Name>
+            <Synonym>...</Synonym>
+            <Comment/>
+            <Group>NavigationPanelOrdinary</Group>
+            <Representation>Auto</Representation>
+            <ToolTip>...</ToolTip>
+            <Picture/>
+            <Shortcut/>
+            <IncludeHelpInContents>false</IncludeHelpInContents>
+            <CommandParameterType/>
+            <ParameterUseMode>Single</ParameterUseMode>
+            <ModifiesData>false</ModifiesData>
+            <OnMainServerUnavalableBehavior>Auto</OnMainServerUnavalableBehavior>
+        </Properties>
+    </CommonCommand>
+</MetaDataObject>
+```
+
+### 6.3. Свойства (Properties)
+
+| Свойство | Тип | Обязательно | Описание |
+|---|---|---|---|
+| `Name` | string | да | Программное имя |
+| `Synonym` | LocalString | да | Отображаемое имя |
+| `Comment` | string | да | Комментарий |
+| `Group` | string | да | Группа размещения команды |
+| `Representation` | enum | да | Способ отображения: `Auto`, `PictureAndText` |
+| `ToolTip` | LocalString | да | Подсказка |
+| `Picture` | Picture | да | Иконка |
+| `Shortcut` | string | да | Сочетание клавиш. Пример: `F11`. Пустой тег если нет |
+| `IncludeHelpInContents` | bool | да | Включать в содержание справки |
+| `CommandParameterType` | TypeList | да | Типы параметра команды |
+| `ParameterUseMode` | enum | да | Режим использования параметра: `Single` или `Multiple` |
+| `ModifiesData` | bool | да | Модифицирует данные |
+| `OnMainServerUnavalableBehavior` | enum | да | Поведение при недоступности сервера: `Auto` |
+
+#### Group — стандартные группы размещения
+
+Команда размещается в одной из групп:
+
+**Панель навигации раздела:**
+- `NavigationPanelOrdinary` — обычные команды навигации
+- `NavigationPanelImportant` — важные команды навигации
+
+**Панель навигации формы:**
+- `FormNavigationPanelGoTo` — «Перейти» в форме
+- `FormNavigationPanelImportant` — важные в навигации формы
+
+**Командная панель формы:**
+- `FormCommandBarImportant` — важные на панели команд формы
+- `FormCommandBarCreateBasedOn` — «Создать на основании»
+
+**Панель действий:**
+- `ActionsPanelTools` — сервисные действия
+- `ActionsPanelReports` — отчёты в панели действий
+
+**Пользовательская группа:**
+- `CommandGroup.<Имя>` — ссылка на группу команд
+
+#### CommandParameterType — типы параметра
+
+Определяет к каким объектам привязана команда. Если пусто — команда глобальная.
+
+**Без параметра (глобальная команда):**
+```xml
+<CommandParameterType/>
+```
+
+**Один тип:**
+```xml
+<CommandParameterType>
+    <v8:Type>cfg:CatalogRef.Сотрудники</v8:Type>
+</CommandParameterType>
+```
+
+**Несколько типов:**
+```xml
+<CommandParameterType>
+    <v8:Type>cfg:ExchangePlanRef.Полный</v8:Type>
+    <v8:Type>cfg:ExchangePlanRef.ПоОрганизации</v8:Type>
+    <v8:Type>cfg:ExchangePlanRef.АвтономнаяРабота</v8:Type>
+</CommandParameterType>
+```
+
+Формат типов: `cfg:<ТипСсылки>.<ИмяОбъекта>`, где типы ссылок:
+- `cfg:CatalogRef.<Имя>` — ссылка на справочник
+- `cfg:DocumentRef.<Имя>` — ссылка на документ
+- `cfg:ExchangePlanRef.<Имя>` — ссылка на план обмена
+
+---
+
+## 7. Команды объектов (встроенные команды)
+
+Помимо общих команд (`CommonCommands/`), команды могут быть определены внутри объектов метаданных (справочников, документов, обработок и т.д.).
+
+### 7.1. Структура
+
+Команды определяются в секции `<ChildObjects>` родительского объекта и хранят модуль в подкаталоге:
+
+```
+Catalogs/
+├── Номенклатура.xml              # В ChildObjects определены Command-ы
+└── Номенклатура/
+    └── Commands/
+        └── КомандаИсторияДвижений/
+            └── Ext/
+                └── CommandModule.bsl   # Модуль команды
+```
+
+### 7.2. XML-определение (внутри ChildObjects родителя)
+
+```xml
+<ChildObjects>
+    <Form>ФормаЭлемента</Form>
+    <Form>ФормаСписка</Form>
+    <Command uuid="d95fb51f-719f-4d67-ab58-b8144e3f2b7e">
+        <Properties>
+            <Name>КомандаИсторияДвижений</Name>
+            <Synonym>
+                <v8:item>
+                    <v8:lang>ru</v8:lang>
+                    <v8:content>История движений</v8:content>
+                </v8:item>
+            </Synonym>
+            <Comment/>
+            <Group>FormNavigationPanelImportant</Group>
+            <CommandParameterType>
+                <v8:Type>cfg:CatalogRef.Номенклатура</v8:Type>
+            </CommandParameterType>
+            <ParameterUseMode>Single</ParameterUseMode>
+            <ModifiesData>false</ModifiesData>
+            <Representation>Auto</Representation>
+            <ToolTip/>
+            <Picture/>
+            <Shortcut/>
+            <OnMainServerUnavalableBehavior>Auto</OnMainServerUnavalableBehavior>
+        </Properties>
+    </Command>
+</ChildObjects>
+```
+
+### 7.3. Свойства команды объекта
+
+Набор свойств идентичен CommonCommand (см. [раздел 6.3](#63-свойства-properties-1)), за исключением отсутствия `IncludeHelpInContents`.
+
+| Свойство | Описание |
+|---|---|
+| `Name` | Программное имя команды |
+| `Synonym` | Отображаемое имя |
+| `Comment` | Комментарий |
+| `Group` | Группа размещения (те же значения что у CommonCommand) |
+| `CommandParameterType` | Тип параметра (обычно ссылка на тип владельца) |
+| `ParameterUseMode` | `Single` или `Multiple` |
+| `ModifiesData` | Модифицирует данные (`true`/`false`) |
+| `Representation` | Способ отображения |
+| `ToolTip` | Подсказка |
+| `Picture` | Иконка |
+| `Shortcut` | Сочетание клавиш |
+| `OnMainServerUnavalableBehavior` | Поведение при недоступности сервера |
+
+> **Порядок свойств**: В командах объектов `Representation` идёт **после** `ModifiesData`, а в CommonCommand — после `Comment`. Это единственное структурное различие.
+
+### 7.4. Ссылка на команду объекта в CommandInterface
+
+В `CommandInterface.xml` команда объекта адресуется как:
+```
+<ТипОбъекта>.<ИмяОбъекта>.Command.<ИмяКоманды>
+```
+
+Пример: `Catalog.Номенклатура.Command.КомандаИсторияДвижений`
+
+---
+
+## 8. Формат ссылок на команды в CommandInterface
 
 Атрибут `name` в элементах `Command` использует точечную нотацию:
 
-### 5.1. Стандартные команды (StandardCommand)
+### 8.1. Стандартные команды (StandardCommand)
 
 ```
 <ТипОбъекта>.<ИмяОбъекта>.StandardCommand.<Операция>
@@ -452,7 +810,7 @@ Ext/
 - `InformationRegister.КурсыВалют.StandardCommand.OpenList`
 - `DocumentJournal.ЖурналДокументов.StandardCommand.OpenList`
 
-### 5.2. Пользовательские команды (Command)
+### 8.2. Пользовательские команды (Command)
 
 ```
 <ТипОбъекта>.<ИмяОбъекта>.Command.<ИмяКоманды>
@@ -465,7 +823,7 @@ Ext/
 - `InformationRegister.Настройки.Command.ОбменДанными`
 - `ExchangePlan.Мобильное.Command.ОткрытьНастройки`
 
-### 5.3. Общие команды (CommonCommand)
+### 8.3. Общие команды (CommonCommand)
 
 ```
 CommonCommand.<ИмяКоманды>
@@ -476,7 +834,7 @@ CommonCommand.<ИмяКоманды>
 - `CommonCommand.ДополнительныеОбработкиПродажи`
 - `CommonCommand.ПерсональныеНастройки`
 
-### 5.4. UUID-ссылки
+### 8.4. UUID-ссылки
 
 ```
 0:<UUID>
@@ -488,9 +846,9 @@ CommonCommand.<ИмяКоманды>
 
 ---
 
-## 6. Группы команд (CommandGroup)
+## 9. Группы команд в CommandInterface
 
-### 6.1. Стандартные группы панелей
+### 9.1. Стандартные группы панелей
 
 | Идентификатор | Панель | Описание |
 |---|---|---|
@@ -500,7 +858,7 @@ CommonCommand.<ИмяКоманды>
 | `ActionsPanelCreate` | Действия | Блок «Создать» |
 | `ActionsPanelTools` | Действия | Блок «Сервис» |
 
-### 6.2. Пользовательские группы
+### 9.2. Пользовательские группы
 
 ```
 CommandGroup.<ИмяГруппы>
@@ -518,7 +876,7 @@ CommandGroup.<ИмяГруппы>
 
 ---
 
-## 7. Различия версий формата
+## 10. Различия версий формата
 
 | Аспект | `2.17` (8.3.20–8.3.24) | `2.20` (8.3.27+) |
 |---|---|---|
@@ -532,9 +890,9 @@ CommandGroup.<ИмяГруппы>
 
 ---
 
-## 8. Полный пример
+## 11. Полные примеры
 
-### 8.1. Подсистема верхнего уровня (Продажи.xml)
+### 11.1. Подсистема верхнего уровня (Продажи.xml)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -579,7 +937,7 @@ CommandGroup.<ИмяГруппы>
 </MetaDataObject>
 ```
 
-### 8.2. CommandInterface подсистемы (Продажи/Ext/CommandInterface.xml)
+### 11.2. CommandInterface подсистемы (Продажи/Ext/CommandInterface.xml)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -639,7 +997,7 @@ CommandGroup.<ИмяГруппы>
 </CommandInterface>
 ```
 
-### 8.3. Корневой CommandInterface (Ext/CommandInterface.xml)
+### 11.3. Корневой CommandInterface (Ext/CommandInterface.xml)
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
