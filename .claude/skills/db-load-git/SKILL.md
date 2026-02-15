@@ -1,7 +1,7 @@
 ---
 name: db-load-git
 description: Загрузка изменений из Git в базу 1С. Используй когда пользователь просит загрузить изменения из гита, обновить базу из репозитория, partial load из коммита
-argument-hint: [database] [source]
+argument-hint: "[database] [source]"
 allowed-tools:
   - Bash
   - Read

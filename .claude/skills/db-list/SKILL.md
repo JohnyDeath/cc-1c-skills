@@ -1,7 +1,7 @@
 ---
 name: db-list
 description: Управление реестром баз данных 1С (.v8-project.json). Используй когда пользователь говорит про базы данных, список баз, "добавь базу", "какие базы есть"
-argument-hint: [add|remove|show]
+argument-hint: "[add|remove|show]"
 allowed-tools:
   - Read
   - Write

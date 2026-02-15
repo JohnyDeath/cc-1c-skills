@@ -1,7 +1,7 @@
 ---
 name: db-run
 description: Запуск 1С:Предприятие. Используй когда пользователь просит запустить 1С, открыть базу, запустить предприятие
-argument-hint: [database]
+argument-hint: "[database]"
 allowed-tools:
   - Bash
   - Read

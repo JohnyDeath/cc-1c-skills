@@ -1,7 +1,7 @@
 ---
 name: db-update
 description: Обновление конфигурации базы данных 1С. Используй когда пользователь просит обновить БД, применить конфигурацию, UpdateDBCfg
-argument-hint: [database]
+argument-hint: "[database]"
 allowed-tools:
   - Bash
   - Read
