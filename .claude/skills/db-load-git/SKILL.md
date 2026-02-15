@@ -1,0 +1,110 @@
+---
+name: db-load-git
+description: Загрузка изменений из Git в базу 1С. Используй когда пользователь просит загрузить изменения из гита, обновить базу из репозитория, partial load из коммита
+argument-hint: [database] [source]
+allowed-tools:
+  - Bash
+  - Read
+  - Glob
+  - AskUserQuestion
+---
+
+# /db-load-git — Загрузка изменений из Git
+
+Определяет изменённые файлы конфигурации по данным Git и выполняет частичную загрузку в информационную базу.
+
+## Usage
+
+```
+/db-load-git [database]
+/db-load-git dev                              — все незафиксированные изменения
+/db-load-git dev -Source Staged               — только staged
+/db-load-git dev -Source Commit -CommitRange "HEAD~3..HEAD"
+/db-load-git dev -DryRun                      — только показать что будет загружено
+```
+
+## Разрешение базы данных
+
+1. Прочитай `.v8-project.json` (в корне проекта или ближайшем родительском каталоге)
+2. Если пользователь указал базу — найди по id/alias/branch/имени
+3. Если не указал — используй `default`
+4. Если не найдено или неоднозначно — спроси пользователя
+5. Если файл не найден — спроси пользователя параметры подключения и предложи создать `.v8-project.json`
+
+Если в записи базы указан `configSrc` — используй его как каталог конфигурации.
+
+Автоопределение платформы (если `v8path` не задан):
+```powershell
+$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
+```
+
+## Команда
+
+```powershell
+powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 <параметры>
+```
+
+### Параметры скрипта
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-ConfigDir <путь>` | да | Каталог XML-выгрузки (git-репозиторий) |
+| `-Source <источник>` | нет | `All` (по умолч.) / `Staged` / `Unstaged` / `Commit` |
+| `-CommitRange <range>` | для Commit | Диапазон коммитов (напр. `HEAD~3..HEAD`) |
+| `-Extension <имя>` | нет | Загрузить в расширение |
+| `-AllExtensions` | нет | Загрузить все расширения |
+| `-Format <формат>` | нет | `Hierarchical` (по умолч.) / `Plain` |
+| `-DryRun` | нет | Только показать что будет загружено (без загрузки) |
+
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
+
+### Источники изменений
+
+| Source | Описание |
+|--------|----------|
+| `All` | Все незафиксированные: staged + unstaged + untracked |
+| `Staged` | Только проиндексированные (git add) |
+| `Unstaged` | Только изменённые но не проиндексированные |
+| `Commit` | Файлы из диапазона коммитов (требует `-CommitRange`) |
+
+### Логика маппинга BSL → XML
+
+Для `.bsl` файлов скрипт автоматически добавляет:
+1. XML объекта верхнего уровня (напр. `Catalogs/Номенклатура.xml`)
+2. Все файлы из каталога `Ext/` этого объекта (связанные модули)
+
+Пропускаются: `ConfigDumpInfo.xml`, файлы вне `ConfigDir`.
+
+## Коды возврата
+
+| Код | Описание |
+|-----|----------|
+| 0 | Успешно (или нет изменений) |
+| 1 | Ошибка (см. лог) |
+
+## После выполнения
+
+1. Показать список загруженных файлов
+2. **Предложить `/db-update`** — для применения изменений к БД
+
+## Примеры
+
+```powershell
+# Загрузить все незафиксированные изменения
+powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -V8Path "C:\Program Files\1cv8\8.3.25.1257\bin" -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source All
+
+# Только staged
+powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source Staged
+
+# Из диапазона коммитов
+powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source Commit -CommitRange "HEAD~3..HEAD"
+
+# Только посмотреть (DryRun)
+powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -ConfigDir "C:\WS\cfsrc" -DryRun
+```

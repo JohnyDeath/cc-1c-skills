@@ -33,6 +33,7 @@
 | Расширения (CFE) | 5 навыков `/cfe-*` | Создание, заимствование, перехват методов, валидация, анализ расширений | [Подробнее](docs/cfe-guide.md) |
 | Подсистемы (Subsystem) | 4 навыка `/subsystem-*` | Анализ, создание, редактирование, валидация подсистем конфигурации | — |
 | Командный интерфейс (CI) | 2 навыка `/interface-*` | Редактирование и валидация CommandInterface.xml подсистем | — |
+| Базы данных (DB) | 9 навыков `/db-*` | Создание баз, загрузка/выгрузка конфигураций, обновление БД, загрузка из Git | [Подробнее](docs/db-guide.md) |
 | Утилиты | `/img-grid` | Наложение сетки на изображение для определения пропорций колонок | — |
 
 ## Требования
@@ -46,7 +47,7 @@
 - [XML-формат внешних отчётов](docs/1c-erf-spec.md) — отличия ERF от EPF, Properties, MainDataCompositionSchema
 - [Управляемая форма](docs/1c-form-spec.md) — Form.xml, элементы, команды, реквизиты
 - [Встроенная справка](docs/1c-help-spec.md) — Help.xml, HTML-страницы, кнопка справки на форме
-- [Сборка и разборка EPF/ERF](docs/build-spec.md) — команды `1cv8.exe`, параметры, коды возврата
+- [Пакетный режим конфигуратора 1С](docs/build-spec.md) — команды `1cv8.exe`, DESIGNER, ENTERPRISE, CREATEINFOBASE
 - [Табличный документ (MXL)](docs/1c-spreadsheet-spec.md) — XML-формат SpreadsheetDocument, совместимость версий
 - [MXL DSL](docs/mxl-dsl-spec.md) — JSON-формат описания макета для `/mxl-compile` и `/mxl-decompile`
 - [Form DSL](docs/form-dsl-spec.md) — JSON-формат описания формы для `/form-compile`
@@ -112,6 +113,15 @@
 ├── subsystem-validate/  # Валидация подсистемы
 ├── interface-edit/      # Редактирование CommandInterface.xml
 ├── interface-validate/  # Валидация CommandInterface.xml
+├── db-list/             # Управление реестром баз данных
+├── db-create/           # Создание информационной базы
+├── db-dump-cf/          # Выгрузка конфигурации в CF
+├── db-load-cf/          # Загрузка конфигурации из CF
+├── db-dump-xml/         # Выгрузка конфигурации в XML
+├── db-load-xml/         # Загрузка конфигурации из XML
+├── db-update/           # Обновление конфигурации БД
+├── db-run/              # Запуск 1С:Предприятие
+├── db-load-git/         # Загрузка изменений из Git
 └── img-grid/            # Сетка для анализа изображений
 docs/
 ├── epf-guide.md            # Гайд: внешние обработки и отчёты
@@ -122,12 +132,13 @@ docs/
 ├── meta-guide.md           # Гайд: объекты метаданных конфигурации
 ├── cf-guide.md             # Гайд: корневые файлы конфигурации
 ├── cfe-guide.md            # Гайд: расширения конфигурации (CFE)
+├── db-guide.md             # Гайд: базы данных 1С
 ├── 1c-epf-spec.md          # Спецификация XML-формата (EPF)
 ├── 1c-erf-spec.md          # Спецификация XML-формата (ERF)
 ├── 1c-form-spec.md         # Спецификация управляемых форм
 ├── 1c-help-spec.md         # Спецификация встроенной справки
 ├── 1c-config-objects-spec.md # Спецификация объектов конфигурации
-├── build-spec.md           # Спецификация сборки/разборки
+├── build-spec.md           # Пакетный режим конфигуратора 1С
 ├── 1c-spreadsheet-spec.md  # Спецификация табличного документа
 ├── mxl-dsl-spec.md         # Спецификация MXL DSL
 ├── form-dsl-spec.md        # Спецификация Form DSL
