@@ -20,7 +20,7 @@ allowed-tools:
 /cf-info <ConfigPath> -Mode brief
 ```
 
-Это даст `CompatibilityMode` (передать в `-CompatibilityMode`) и версию конфигурации (для `-Version`).
+Это даст `CompatibilityMode` (передать в `-CompatibilityMode`) и версию конфигурации (для `-Version`, например `<ВерсияКонфигурации>.1`).
 
 ## Параметры
 
@@ -72,4 +72,3 @@ powershell.exe -NoProfile -File .claude\skills\cfe-init\scripts\cfe-init.ps1 -Na
 /cfe-validate <OutputDir>
 ```
 
-Подробнее о параметрах и формате: [reference.md](reference.md)

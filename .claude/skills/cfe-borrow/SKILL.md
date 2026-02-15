@@ -56,4 +56,3 @@ powershell.exe -NoProfile -File .claude\skills\cfe-borrow\scripts\cfe-borrow.ps1
 /cfe-validate <ExtensionPath>
 ```
 
-Подробнее об алгоритме: [reference.md](reference.md)
