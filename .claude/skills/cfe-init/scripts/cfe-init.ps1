@@ -1,17 +1,26 @@
-﻿# cf-init v1.0 — Create empty 1C configuration scaffold
+﻿# cfe-init v1.0 — Create 1C configuration extension scaffold (CFE)
 # Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 param(
 	[Parameter(Mandatory)]
 	[string]$Name,
 	[string]$Synonym = $Name,
+	[string]$NamePrefix,
 	[string]$OutputDir = "src",
+	[ValidateSet("Patch","Customization","AddOn")]
+	[string]$Purpose = "Customization",
 	[string]$Version,
 	[string]$Vendor,
-	[string]$CompatibilityMode = "Version8_3_24"
+	[string]$CompatibilityMode = "Version8_3_24",
+	[switch]$NoRole
 )
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# --- Default NamePrefix ---
+if (-not $NamePrefix) {
+	$NamePrefix = "${Name}_"
+}
 
 # --- Resolve output dir ---
 if (-not [System.IO.Path]::IsPathRooted($OutputDir)) {
@@ -28,6 +37,8 @@ if (Test-Path $cfgFile) {
 # --- Generate UUIDs ---
 $uuidCfg  = [guid]::NewGuid().ToString()
 $uuidLang = [guid]::NewGuid().ToString()
+$uuidRole = [guid]::NewGuid().ToString()
+
 # 7 ContainedObject ObjectIds
 $co1 = [guid]::NewGuid().ToString()
 $co2 = [guid]::NewGuid().ToString()
@@ -36,29 +47,6 @@ $co4 = [guid]::NewGuid().ToString()
 $co5 = [guid]::NewGuid().ToString()
 $co6 = [guid]::NewGuid().ToString()
 $co7 = [guid]::NewGuid().ToString()
-
-# --- Mobile functionalities ---
-$mobileFuncs = @(
-	@("Biometrics","true"), @("Location","false"), @("BackgroundLocation","false"),
-	@("BluetoothPrinters","false"), @("WiFiPrinters","false"), @("Contacts","false"),
-	@("Calendars","false"), @("PushNotifications","false"), @("LocalNotifications","false"),
-	@("InAppPurchases","false"), @("PersonalComputerFileExchange","false"), @("Ads","false"),
-	@("NumberDialing","false"), @("CallProcessing","false"), @("CallLog","false"),
-	@("AutoSendSMS","false"), @("ReceiveSMS","false"), @("SMSLog","false"),
-	@("Camera","false"), @("Microphone","false"), @("MusicLibrary","false"),
-	@("PictureAndVideoLibraries","false"), @("AudioPlaybackAndVibration","false"),
-	@("BackgroundAudioPlaybackAndVibration","false"), @("InstallPackages","false"),
-	@("OSBackup","true"), @("ApplicationUsageStatistics","false"),
-	@("BarcodeScanning","false"), @("BackgroundAudioRecording","false"),
-	@("AllFilesAccess","false"), @("Videoconferences","false"), @("NFC","false"),
-	@("DocumentScanning","false"), @("SpeechToText","false"), @("Geofences","false"),
-	@("IncomingShareRequests","false"), @("AllIncomingShareRequestsTypesProcessing","false")
-)
-
-$mobileXml = ""
-foreach ($mf in $mobileFuncs) {
-	$mobileXml += "`r`n`t`t`t`t<app:functionality>`r`n`t`t`t`t`t<app:functionality>$($mf[0])</app:functionality>`r`n`t`t`t`t`t<app:use>$($mf[1])</app:use>`r`n`t`t`t`t</app:functionality>"
-}
 
 # --- Synonym XML ---
 $synonymXml = ""
@@ -69,6 +57,22 @@ if ($Synonym) {
 # --- Optional properties ---
 $vendorXml = if ($Vendor) { [System.Security.SecurityElement]::Escape($Vendor) } else { "" }
 $versionXml = if ($Version) { [System.Security.SecurityElement]::Escape($Version) } else { "" }
+
+# --- Role name ---
+$roleName = "${NamePrefix}ОсновнаяРоль"
+
+# --- DefaultRoles XML ---
+$defaultRolesXml = ""
+if (-not $NoRole) {
+	$defaultRolesXml = "`r`n`t`t`t`t<xr:Item xsi:type=`"xr:MDObjectRef`">Role.$roleName</xr:Item>`r`n`t`t`t"
+}
+
+# --- ChildObjects ---
+$childObjectsXml = "`r`n`t`t`t<Language>Русский</Language>"
+if (-not $NoRole) {
+	$childObjectsXml += "`r`n`t`t`t<Role>$roleName</Role>"
+}
+$childObjectsXml += "`r`n`t`t"
 
 # --- Configuration.xml ---
 $cfgXml = @"
@@ -106,89 +110,63 @@ $cfgXml = @"
 			</xr:ContainedObject>
 		</InternalInfo>
 		<Properties>
+			<ObjectBelonging>Adopted</ObjectBelonging>
 			<Name>$([System.Security.SecurityElement]::Escape($Name))</Name>
 			<Synonym>$synonymXml</Synonym>
 			<Comment/>
-			<NamePrefix/>
+			<ConfigurationExtensionPurpose>$Purpose</ConfigurationExtensionPurpose>
+			<KeepMappingToExtendedConfigurationObjectsByIDs>true</KeepMappingToExtendedConfigurationObjectsByIDs>
+			<NamePrefix>$([System.Security.SecurityElement]::Escape($NamePrefix))</NamePrefix>
 			<ConfigurationExtensionCompatibilityMode>$CompatibilityMode</ConfigurationExtensionCompatibilityMode>
 			<DefaultRunMode>ManagedApplication</DefaultRunMode>
 			<UsePurposes>
 				<v8:Value xsi:type="app:ApplicationUsePurpose">PlatformApplication</v8:Value>
 			</UsePurposes>
 			<ScriptVariant>Russian</ScriptVariant>
-			<DefaultRoles/>
+			<DefaultRoles>$defaultRolesXml</DefaultRoles>
 			<Vendor>$vendorXml</Vendor>
 			<Version>$versionXml</Version>
-			<UpdateCatalogAddress/>
-			<IncludeHelpInContents>false</IncludeHelpInContents>
-			<UseManagedFormInOrdinaryApplication>false</UseManagedFormInOrdinaryApplication>
-			<UseOrdinaryFormInManagedApplication>false</UseOrdinaryFormInManagedApplication>
-			<AdditionalFullTextSearchDictionaries/>
-			<CommonSettingsStorage/>
-			<ReportsUserSettingsStorage/>
-			<ReportsVariantsStorage/>
-			<FormDataSettingsStorage/>
-			<DynamicListsUserSettingsStorage/>
-			<URLExternalDataStorage/>
-			<Content/>
-			<DefaultReportForm/>
-			<DefaultReportVariantForm/>
-			<DefaultReportSettingsForm/>
-			<DefaultReportAppearanceTemplate/>
-			<DefaultDynamicListSettingsForm/>
-			<DefaultSearchForm/>
-			<DefaultDataHistoryChangeHistoryForm/>
-			<DefaultDataHistoryVersionDataForm/>
-			<DefaultDataHistoryVersionDifferencesForm/>
-			<DefaultCollaborationSystemUsersChoiceForm/>
-			<RequiredMobileApplicationPermissions/>
-			<UsedMobileApplicationFunctionalities>$mobileXml
-			</UsedMobileApplicationFunctionalities>
-			<StandaloneConfigurationRestrictionRoles/>
-			<MobileApplicationURLs/>
-			<AllowedIncomingShareRequestTypes/>
-			<MainClientApplicationWindowMode>Normal</MainClientApplicationWindowMode>
-			<DefaultInterface/>
-			<DefaultStyle/>
 			<DefaultLanguage>Language.Русский</DefaultLanguage>
 			<BriefInformation/>
 			<DetailedInformation/>
 			<Copyright/>
 			<VendorInformationAddress/>
 			<ConfigurationInformationAddress/>
-			<DataLockControlMode>Managed</DataLockControlMode>
-			<ObjectAutonumerationMode>NotAutoFree</ObjectAutonumerationMode>
-			<ModalityUseMode>DontUse</ModalityUseMode>
-			<SynchronousPlatformExtensionAndAddInCallUseMode>DontUse</SynchronousPlatformExtensionAndAddInCallUseMode>
-			<InterfaceCompatibilityMode>Taxi</InterfaceCompatibilityMode>
-			<DatabaseTablespacesUseMode>DontUse</DatabaseTablespacesUseMode>
-			<CompatibilityMode>$CompatibilityMode</CompatibilityMode>
-			<DefaultConstantsForm/>
+			<InterfaceCompatibilityMode>TaxiEnableVersion8_2</InterfaceCompatibilityMode>
 		</Properties>
-		<ChildObjects>
-			<Language>Русский</Language>
-		</ChildObjects>
+		<ChildObjects>$childObjectsXml</ChildObjects>
 	</Configuration>
 </MetaDataObject>
 "@
 
-# --- Languages/Русский.xml ---
+# --- Languages/Русский.xml (adopted format) ---
 $langXml = @"
 <?xml version="1.0" encoding="UTF-8"?>
 <MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.17">
 	<Language uuid="$uuidLang">
+		<InternalInfo/>
 		<Properties>
+			<ObjectBelonging>Adopted</ObjectBelonging>
 			<Name>Русский</Name>
-			<Synonym>
-				<v8:item>
-					<v8:lang>ru</v8:lang>
-					<v8:content>Русский</v8:content>
-				</v8:item>
-			</Synonym>
 			<Comment/>
+			<ExtendedConfigurationObject>00000000-0000-0000-0000-000000000000</ExtendedConfigurationObject>
 			<LanguageCode>ru</LanguageCode>
 		</Properties>
 	</Language>
+</MetaDataObject>
+"@
+
+# --- Role XML ---
+$roleXml = @"
+<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.17">
+	<Role uuid="$uuidRole">
+		<Properties>
+			<Name>$([System.Security.SecurityElement]::Escape($roleName))</Name>
+			<Synonym/>
+			<Comment/>
+		</Properties>
+	</Role>
 </MetaDataObject>
 "@
 
@@ -208,8 +186,23 @@ $enc = New-Object System.Text.UTF8Encoding($true)
 $langFile = Join-Path $langDir "Русский.xml"
 [System.IO.File]::WriteAllText($langFile, $langXml, $enc)
 
+# --- Role ---
+if (-not $NoRole) {
+	$roleDir = Join-Path $OutputDir "Roles"
+	if (-not (Test-Path $roleDir)) {
+		New-Item -ItemType Directory -Path $roleDir -Force | Out-Null
+	}
+	$roleFile = Join-Path $roleDir "$roleName.xml"
+	[System.IO.File]::WriteAllText($roleFile, $roleXml, $enc)
+}
+
 # --- Output ---
-Write-Host "[OK] Создана конфигурация: $Name"
+Write-Host "[OK] Создано расширение: $Name"
 Write-Host "     Каталог:            $OutputDir"
+Write-Host "     Назначение:         $Purpose"
+Write-Host "     Префикс:           $NamePrefix"
 Write-Host "     Configuration.xml:  $cfgFile"
 Write-Host "     Languages:          $langFile"
+if (-not $NoRole) {
+	Write-Host "     Role:               $roleFile"
+}

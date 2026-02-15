@@ -1,6 +1,6 @@
 ---
 name: cf-init
-description: Создать пустую конфигурацию 1С (scaffold XML-исходников) — Configuration.xml, ConfigDumpInfo.xml, Languages/
+description: Создать пустую конфигурацию 1С (scaffold XML-исходников) — Configuration.xml, Languages/
 argument-hint: <Name> [-Synonym <name>] [-OutputDir src]
 allowed-tools:
   - Bash
@@ -10,7 +10,7 @@ allowed-tools:
 
 # /cf-init — Создание пустой конфигурации 1С
 
-Создаёт scaffold исходников пустой конфигурации 1С: `Configuration.xml`, `ConfigDumpInfo.xml`, `Languages/Русский.xml`.
+Создаёт scaffold исходников пустой конфигурации 1С: `Configuration.xml`, `Languages/Русский.xml`.
 
 ## Параметры и команда
 
@@ -32,7 +32,6 @@ powershell.exe -NoProfile -File .claude\skills\cf-init\scripts\cf-init.ps1 -Name
 ```
 <OutputDir>/
 ├── Configuration.xml         # Корневой файл — все свойства
-├── ConfigDumpInfo.xml        # Служебный файл (минимальный)
 └── Languages/
     └── Русский.xml           # Язык по умолчанию
 ```
