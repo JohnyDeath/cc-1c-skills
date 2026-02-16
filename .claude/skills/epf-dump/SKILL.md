@@ -24,26 +24,32 @@ allowed-tools:
 | EpfFile  | да           | —            | Путь к EPF-файлу                    |
 | OutDir   | нет          | `src`        | Каталог для выгрузки исходников     |
 
-## Переменные окружения
+## Параметры подключения
 
-| Переменная | Описание                              | Пример                                        |
-|------------|---------------------------------------|-----------------------------------------------|
-| V8_PATH    | Каталог bin платформы 1С              | `C:\Program Files\1cv8\8.3.25.1257\bin`       |
-| V8_BASE    | Путь к пустой файловой ИБ            | `.\base`                                      |
+Прочитай `.v8-project.json` из корня проекта. Возьми `v8path` (путь к платформе) и разреши базу:
+1. Если пользователь указал параметры подключения (путь, сервер) — используй напрямую
+2. Если указал базу по имени — ищи по id / alias / name в `.v8-project.json`
+3. Если не указал — сопоставь текущую ветку Git с `databases[].branches`
+4. Если ветка не совпала — используй `default`
+5. Если `.v8-project.json` нет или баз нет — создай пустую ИБ в `./base`
+Если `v8path` не задан — автоопределение: `Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort -Desc | Select -First 1`
+Если использованная база не зарегистрирована — после выполнения предложи добавить через `/db-list add`.
 
 ## Команды
 
-### 1. Создать пустую ИБ (если нет)
+### 1. Создать ИБ (если нет зарегистрированной базы)
 
 ```cmd
-"%V8_PATH%\1cv8.exe" CREATEINFOBASE File="%V8_BASE%"
+"<v8path>\1cv8.exe" CREATEINFOBASE File="./base"
 ```
 
 ### 2. Разборка EPF в XML
 
+Файловая база:
 ```cmd
-"%V8_PATH%\1cv8.exe" DESIGNER /F "%V8_BASE%" /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "<OutDir>" "<EpfFile>" -Format Hierarchical /Out "<OutDir>\dump.log"
+"<v8path>\1cv8.exe" DESIGNER /F "<база>" /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "<OutDir>" "<EpfFile>" -Format Hierarchical /Out "<OutDir>\dump.log"
 ```
+Серверная база — вместо `/F` используй `/S`, добавь `/N"<user>" /P"<pwd>"` при наличии учётных данных.
 
 ## Коды возврата
 
@@ -79,12 +85,10 @@ allowed-tools:
 ## Пример полного цикла
 
 ```powershell
-$env:V8_PATH = "C:\Program Files\1cv8\8.3.25.1257\bin"
-$env:V8_BASE = ".\base"
-
-# Создать ИБ
-& "$env:V8_PATH\1cv8.exe" CREATEINFOBASE "File=$env:V8_BASE"
+# Параметры из .v8-project.json:
+$v8path = "C:\Program Files\1cv8\8.3.25.1257\bin"  # v8path
+$base   = "C:\Bases\MyDB"                           # databases[].path
 
 # Разобрать
-& "$env:V8_PATH\1cv8.exe" DESIGNER /F $env:V8_BASE /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "src" "build\МояОбработка.epf" -Format Hierarchical /Out "build\dump.log"
+& "$v8path\1cv8.exe" DESIGNER /F $base /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "src" "build\МояОбработка.epf" -Format Hierarchical /Out "build\dump.log"
 ```
