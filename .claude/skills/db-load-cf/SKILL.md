@@ -36,7 +36,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 <параметры>
+powershell.exe -NoProfile -File .claude/skills/db-load-cf/scripts/db-load-cf.ps1 <параметры>
 ```
 
 ### Параметры скрипта
@@ -71,11 +71,11 @@ powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1
 
 ```powershell
 # Файловая база
-powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -InputFile "C:\backup\config.cf"
+powershell.exe -NoProfile -File .claude/skills/db-load-cf/scripts/db-load-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -InputFile "C:\backup\config.cf"
 
 # Серверная база
-powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Test" -UserName "Admin" -Password "secret" -InputFile "config.cf"
+powershell.exe -NoProfile -File .claude/skills/db-load-cf/scripts/db-load-cf.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Test" -UserName "Admin" -Password "secret" -InputFile "config.cf"
 
 # Загрузка расширения
-powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -InputFile "ext.cfe" -Extension "МоёРасширение"
+powershell.exe -NoProfile -File .claude/skills/db-load-cf/scripts/db-load-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -InputFile "ext.cfe" -Extension "МоёРасширение"
 ```

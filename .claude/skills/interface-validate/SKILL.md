@@ -23,7 +23,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File '.claude\skills\interface-validate\scripts\interface-validate.ps1' -CIPath '<path>'
+powershell.exe -NoProfile -File '.claude/skills/interface-validate/scripts/interface-validate.ps1' -CIPath '<path>'
 ```
 
 ## Проверки (13)

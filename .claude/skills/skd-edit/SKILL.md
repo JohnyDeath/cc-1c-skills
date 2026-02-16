@@ -25,7 +25,7 @@ allowed-tools:
 | `NoSelection` | (опц.) Не добавлять поле в selection варианта |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\skd-edit\scripts\skd-edit.ps1 -TemplatePath "<path>" -Operation <op> -Value "<value>"
+powershell.exe -NoProfile -File .claude/skills/skd-edit/scripts/skd-edit.ps1 -TemplatePath "<path>" -Operation <op> -Value "<value>"
 ```
 
 ## Пакетный режим (batch)

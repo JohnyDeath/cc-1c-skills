@@ -23,7 +23,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\cfe-validate\scripts\cfe-validate.ps1 -ExtensionPath src
+powershell.exe -NoProfile -File .claude/skills/cfe-validate/scripts/cfe-validate.ps1 -ExtensionPath src
 ```
 
 ## Проверки (9 шагов)

@@ -41,7 +41,7 @@ allowed-tools:
 Используй общий скрипт из epf-build:
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\epf-build\scripts\epf-build.ps1 <параметры>
+powershell.exe -NoProfile -File .claude/skills/epf-build/scripts/epf-build.ps1 <параметры>
 ```
 
 ### Параметры скрипта
@@ -74,8 +74,8 @@ powershell.exe -NoProfile -File .claude\skills\epf-build\scripts\epf-build.ps1 <
 
 ```powershell
 # Сборка отчёта (файловая база)
-powershell.exe -NoProfile -File .claude\skills\epf-build\scripts\epf-build.ps1 -InfoBasePath "C:\Bases\MyDB" -SourceFile "src\МойОтчёт.xml" -OutputFile "build\МойОтчёт.erf"
+powershell.exe -NoProfile -File .claude/skills/epf-build/scripts/epf-build.ps1 -InfoBasePath "C:\Bases\MyDB" -SourceFile "src\МойОтчёт.xml" -OutputFile "build\МойОтчёт.erf"
 
 # Серверная база
-powershell.exe -NoProfile -File .claude\skills\epf-build\scripts\epf-build.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyDB" -UserName "Admin" -Password "secret" -SourceFile "src\МойОтчёт.xml" -OutputFile "build\МойОтчёт.erf"
+powershell.exe -NoProfile -File .claude/skills/epf-build/scripts/epf-build.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyDB" -UserName "Admin" -Password "secret" -SourceFile "src\МойОтчёт.xml" -OutputFile "build\МойОтчёт.erf"
 ```

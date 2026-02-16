@@ -22,7 +22,7 @@ allowed-tools:
 ## Запуск скрипта
 
 ```powershell
-powershell.exe -File .claude\skills\role-info\scripts\role-info.ps1 -RightsPath <path> -OutFile <output.txt>
+powershell.exe -File .claude/skills/role-info/scripts/role-info.ps1 -RightsPath <path> -OutFile <output.txt>
 ```
 
 ### Параметры

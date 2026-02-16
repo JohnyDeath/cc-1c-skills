@@ -38,7 +38,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\db-load-xml\scripts\db-load-xml.ps1 <параметры>
+powershell.exe -NoProfile -File .claude/skills/db-load-xml/scripts/db-load-xml.ps1 <параметры>
 ```
 
 ### Параметры скрипта
@@ -95,11 +95,11 @@ Documents/Заказ/Forms/ФормаДокумента.xml
 
 ```powershell
 # Полная загрузка
-powershell.exe -NoProfile -File .claude\skills\db-load-xml\scripts\db-load-xml.ps1 -V8Path "C:\Program Files\1cv8\8.3.25.1257\bin" -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Mode Full
+powershell.exe -NoProfile -File .claude/skills/db-load-xml/scripts/db-load-xml.ps1 -V8Path "C:\Program Files\1cv8\8.3.25.1257\bin" -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Mode Full
 
 # Частичная загрузка конкретных файлов
-powershell.exe -NoProfile -File .claude\skills\db-load-xml\scripts\db-load-xml.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Mode Partial -Files "Catalogs/Номенклатура.xml,Catalogs/Номенклатура/Ext/ObjectModule.bsl"
+powershell.exe -NoProfile -File .claude/skills/db-load-xml/scripts/db-load-xml.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Mode Partial -Files "Catalogs/Номенклатура.xml,Catalogs/Номенклатура/Ext/ObjectModule.bsl"
 
 # Загрузка расширения
-powershell.exe -NoProfile -File .claude\skills\db-load-xml\scripts\db-load-xml.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\ext_src" -Mode Full -Extension "МоёРасширение"
+powershell.exe -NoProfile -File .claude/skills/db-load-xml/scripts/db-load-xml.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\ext_src" -Mode Full -Extension "МоёРасширение"
 ```

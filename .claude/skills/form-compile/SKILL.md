@@ -31,7 +31,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\form-compile\scripts\form-compile.ps1 -JsonPath "<json>" -OutputPath "<xml>"
+powershell.exe -NoProfile -File .claude/skills/form-compile/scripts/form-compile.ps1 -JsonPath "<json>" -OutputPath "<xml>"
 ```
 
 ## JSON DSL — справка

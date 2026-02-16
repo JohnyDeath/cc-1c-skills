@@ -32,7 +32,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-pwsh -NoProfile -File .claude/skills/epf-add-form/scripts/add-form.ps1 -ProcessorName "<ProcessorName>" -FormName "<FormName>" [-Synonym "<Synonym>"] [-Main] [-SrcDir "<SrcDir>"]
+powershell.exe -NoProfile -File .claude/skills/epf-add-form/scripts/add-form.ps1 -ProcessorName "<ProcessorName>" -FormName "<FormName>" [-Synonym "<Synonym>"] [-Main] [-SrcDir "<SrcDir>"]
 ```
 
 ## Что создаётся

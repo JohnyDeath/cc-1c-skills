@@ -31,7 +31,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\db-create\scripts\db-create.ps1 <параметры>
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 <параметры>
 ```
 
 ### Параметры скрипта
@@ -65,14 +65,14 @@ powershell.exe -NoProfile -File .claude\skills\db-create\scripts\db-create.ps1 <
 
 ```powershell
 # Создать файловую базу
-powershell.exe -NoProfile -File .claude\skills\db-create\scripts\db-create.ps1 -InfoBasePath "C:\Bases\NewDB"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBasePath "C:\Bases\NewDB"
 
 # Создать серверную базу
-powershell.exe -NoProfile -File .claude\skills\db-create\scripts\db-create.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Test"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Test"
 
 # Создать из шаблона CF
-powershell.exe -NoProfile -File .claude\skills\db-create\scripts\db-create.ps1 -InfoBasePath "C:\Bases\NewDB" -UseTemplate "C:\Templates\config.cf"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBasePath "C:\Bases\NewDB" -UseTemplate "C:\Templates\config.cf"
 
 # Создать и добавить в список баз
-powershell.exe -NoProfile -File .claude\skills\db-create\scripts\db-create.ps1 -InfoBasePath "C:\Bases\NewDB" -AddToList -ListName "Новая база"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBasePath "C:\Bases\NewDB" -AddToList -ListName "Новая база"
 ```
