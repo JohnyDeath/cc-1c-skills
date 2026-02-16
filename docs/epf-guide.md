@@ -12,6 +12,7 @@
 | `/epf-dump` | `<EpfFile>` | Разобрать EPF в XML (через 1cv8.exe) |
 | `/epf-bsp-init` | `<ProcessorName> <Вид>` | Добавить регистрацию БСП (СведенияОВнешнейОбработке) |
 | `/epf-bsp-add-command` | `<ProcessorName> <Идентификатор>` | Добавить команду в дополнительную обработку БСП |
+| `/epf-validate` | `<ObjectPath> [-MaxErrors 30]` | Валидация структурной корректности обработки (10 проверок) |
 
 ## Внешние отчёты (ERF)
 
@@ -20,6 +21,7 @@
 | `/erf-init` | `<ReportName> [Synonym] [--WithSKD]` | Создать новый отчёт (корневой XML + модуль объекта + опционально СКД) |
 | `/erf-build` | `<ReportName>` | Собрать ERF из XML (через 1cv8.exe) |
 | `/erf-dump` | `<ErfFile>` | Разобрать ERF в XML (через 1cv8.exe) |
+| `/erf-validate` | `<ObjectPath> [-MaxErrors 30]` | Валидация структурной корректности отчёта (10 проверок) |
 
 Флаг `--WithSKD` создаёт макет `ОсновнаяСхемаКомпоновкиДанных` и привязывает его к `MainDataCompositionSchema`.
 
