@@ -35,49 +35,42 @@ allowed-tools:
 
 ## Команда
 
-```cmd
-"<v8path>\1cv8.exe" ENTERPRISE /F "<база>" /N"<user>" /P"<pwd>" /DisableStartupDialogs
+```powershell
+powershell.exe -NoProfile -File .claude\skills\db-run\scripts\db-run.ps1 <параметры>
 ```
 
-Для серверной базы вместо `/F` используй `/S`:
-```cmd
-"<v8path>\1cv8.exe" ENTERPRISE /S "<server>/<ref>" /N"<user>" /P"<pwd>" /DisableStartupDialogs
-```
+### Параметры скрипта
 
-### Параметры
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-Execute <файл.epf>` | нет | Запуск внешней обработки сразу после старта |
+| `-CParam <строка>` | нет | Параметр запуска (/C) |
+| `-URL <ссылка>` | нет | Навигационная ссылка (формат `e1cib/...`) |
 
-| Параметр | Описание |
-|----------|----------|
-| `/Execute <файл.epf>` | Запуск внешней обработки сразу после старта |
-| `/C <строка>` | Передача параметра в прикладное решение |
-| `/URL <ссылка>` | Навигационная ссылка (формат `e1cib/...`) |
-
-> При указании `/Execute` параметр `/URL` игнорируется.
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ## Важно
 
-**Запуск в фоне** — не жди завершения процесса 1С. Используй `Start-Process` без `-Wait`:
-
-```powershell
-Start-Process -FilePath "<v8path>\1cv8.exe" -ArgumentList 'ENTERPRISE /F "<база>" /N"<user>" /P"<pwd>" /DisableStartupDialogs'
-```
-
-Или через Bash:
-```bash
-"<v8path>/1cv8.exe" ENTERPRISE /F "<база>" /N"<user>" /P"<pwd>" /DisableStartupDialogs &
-```
+Скрипт запускает 1С в фоне (`Start-Process` без `-Wait`) — управление возвращается сразу.
 
 ## Примеры
 
 ```powershell
-$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
-
 # Простой запуск
-Start-Process -FilePath $v8.FullName -ArgumentList 'ENTERPRISE /F "C:\Bases\MyDB" /N"Admin" /P"" /DisableStartupDialogs'
+powershell.exe -NoProfile -File .claude\skills\db-run\scripts\db-run.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin"
 
 # Запуск с обработкой
-Start-Process -FilePath $v8.FullName -ArgumentList 'ENTERPRISE /F "C:\Bases\MyDB" /N"Admin" /P"" /Execute "C:\epf\МояОбработка.epf" /DisableStartupDialogs'
+powershell.exe -NoProfile -File .claude\skills\db-run\scripts\db-run.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -Execute "C:\epf\МояОбработка.epf"
 
 # Открыть по навигационной ссылке
-Start-Process -FilePath $v8.FullName -ArgumentList 'ENTERPRISE /F "C:\Bases\MyDB" /N"Admin" /P"" /URL "e1cib/data/Справочник.Номенклатура" /DisableStartupDialogs'
+powershell.exe -NoProfile -File .claude\skills\db-run\scripts\db-run.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -URL "e1cib/data/Справочник.Номенклатура"
+
+# Серверная база с параметром запуска
+powershell.exe -NoProfile -File .claude\skills\db-run\scripts\db-run.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyDB" -UserName "Admin" -Password "secret" -CParam "ЗапуститьОбновление"
 ```

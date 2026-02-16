@@ -35,21 +35,27 @@ allowed-tools:
 Если `v8path` не задан — автоопределение: `Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort -Desc | Select -First 1`
 Если использованная база не зарегистрирована — после выполнения предложи добавить через `/db-list add`.
 
-## Команды
+## Команда
 
-### 1. Создать ИБ (если нет зарегистрированной базы)
-
-```cmd
-"<v8path>\1cv8.exe" CREATEINFOBASE File="./base"
+```powershell
+powershell.exe -NoProfile -File .claude\skills\epf-dump\scripts\epf-dump.ps1 <параметры>
 ```
 
-### 2. Разборка EPF в XML
+### Параметры скрипта
 
-Файловая база:
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /F "<база>" /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "<OutDir>" "<EpfFile>" -Format Hierarchical /Out "<OutDir>\dump.log"
-```
-Серверная база — вместо `/F` используй `/S`, добавь `/N"<user>" /P"<pwd>"` при наличии учётных данных.
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-InputFile <путь>` | да | Путь к EPF/ERF-файлу |
+| `-OutputDir <путь>` | да | Каталог для выгрузки исходников |
+| `-Format <формат>` | нет | `Hierarchical` (по умолч.) / `Plain` |
+
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ## Коды возврата
 
@@ -82,13 +88,12 @@ allowed-tools:
                 └── Template.<ext>
 ```
 
-## Пример полного цикла
+## Примеры
 
 ```powershell
-# Параметры из .v8-project.json:
-$v8path = "C:\Program Files\1cv8\8.3.25.1257\bin"  # v8path
-$base   = "C:\Bases\MyDB"                           # databases[].path
+# Разборка обработки (файловая база)
+powershell.exe -NoProfile -File .claude\skills\epf-dump\scripts\epf-dump.ps1 -InfoBasePath "C:\Bases\MyDB" -InputFile "build\МояОбработка.epf" -OutputDir "src"
 
-# Разобрать
-& "$v8path\1cv8.exe" DESIGNER /F $base /DisableStartupDialogs /DumpExternalDataProcessorOrReportToFiles "src" "build\МояОбработка.epf" -Format Hierarchical /Out "build\dump.log"
+# Серверная база
+powershell.exe -NoProfile -File .claude\skills\epf-dump\scripts\epf-dump.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyDB" -UserName "Admin" -Password "secret" -InputFile "build\МояОбработка.epf" -OutputDir "src"
 ```

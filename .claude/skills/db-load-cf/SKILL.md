@@ -35,22 +35,25 @@ allowed-tools:
 
 ## Команда
 
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /F "<база>" /N"<user>" /P"<pwd>" /LoadCfg "<файл.cf>" /DisableStartupDialogs /Out "<лог>"
+```powershell
+powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 <параметры>
 ```
 
-Для серверной базы вместо `/F` используй `/S`:
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /S "<server>/<ref>" /N"<user>" /P"<pwd>" /LoadCfg "<файл.cf>" /DisableStartupDialogs /Out "<лог>"
-```
+### Параметры скрипта
 
-### Параметры
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-InputFile <путь>` | да | Путь к CF-файлу |
+| `-Extension <имя>` | нет | Загрузить как расширение |
+| `-AllExtensions` | нет | Загрузить все расширения из архива |
 
-| Параметр | Описание |
-|----------|----------|
-| `/LoadCfg <файл>` | Путь к CF-файлу |
-| `-Extension <имя>` | Загрузить как расширение |
-| `-AllExtensions` | Загрузить все расширения из архива |
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ## Коды возврата
 
@@ -67,14 +70,12 @@ allowed-tools:
 ## Примеры
 
 ```powershell
-$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
-
 # Файловая база
-& $v8.FullName DESIGNER /F "C:\Bases\MyDB" /N"Admin" /LoadCfg "C:\backup\config.cf" /DisableStartupDialogs /Out "load.log"
+powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -InputFile "C:\backup\config.cf"
 
 # Серверная база
-& $v8.FullName DESIGNER /S "srv01/MyApp_Test" /N"Admin" /P"secret" /LoadCfg "config.cf" /DisableStartupDialogs /Out "load.log"
+powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Test" -UserName "Admin" -Password "secret" -InputFile "config.cf"
 
-# Не забудь обновить БД после загрузки!
-& $v8.FullName DESIGNER /F "C:\Bases\MyDB" /N"Admin" /UpdateDBCfg /DisableStartupDialogs /Out "update.log"
+# Загрузка расширения
+powershell.exe -NoProfile -File .claude\skills\db-load-cf\scripts\db-load-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -InputFile "ext.cfe" -Extension "МоёРасширение"
 ```
