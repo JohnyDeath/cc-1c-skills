@@ -25,26 +25,30 @@ allowed-tools:
 | SrcDir        | нет          | `src`        | Каталог исходников                   |
 | OutDir        | нет          | `build`      | Каталог для результата               |
 
-## Переменные окружения
+## Параметры подключения
 
-| Переменная | Описание                              | Пример                                        |
-|------------|---------------------------------------|-----------------------------------------------|
-| V8_PATH    | Каталог bin платформы 1С              | `C:\Program Files\1cv8\8.3.25.1257\bin`       |
-| V8_BASE    | Путь к пустой файловой ИБ            | `.\base`                                      |
+Прочитай `.v8-project.json` из корня проекта. Возьми `v8path` (путь к платформе) и разреши базу для сборки:
+1. Если пользователь указал базу — ищи по id / alias / name
+2. Если не указал — сопоставь текущую ветку Git с `databases[].branches`
+3. Если ветка не совпала — используй `default`
+4. Если `.v8-project.json` нет или баз нет — создай пустую ИБ в `./base`
+Если `v8path` не задан — автоопределение: `Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort -Desc | Select -First 1`
 
 ## Команды
 
-### 1. Создать пустую ИБ (если нет)
+### 1. Создать ИБ для сборки (если нет зарегистрированной базы)
 
 ```cmd
-"%V8_PATH%\1cv8.exe" CREATEINFOBASE File="%V8_BASE%"
+"<v8path>\1cv8.exe" CREATEINFOBASE File="./base"
 ```
 
 ### 2. Сборка EPF из XML
 
+Файловая база:
 ```cmd
-"%V8_PATH%\1cv8.exe" DESIGNER /F "%V8_BASE%" /DisableStartupDialogs /LoadExternalDataProcessorOrReportFromFiles "<SrcDir>\<ProcessorName>.xml" "<OutDir>\<ProcessorName>.epf" /Out "<OutDir>\build.log"
+"<v8path>\1cv8.exe" DESIGNER /F "<база>" /DisableStartupDialogs /LoadExternalDataProcessorOrReportFromFiles "<SrcDir>\<ProcessorName>.xml" "<OutDir>\<ProcessorName>.epf" /Out "<OutDir>\build.log"
 ```
+Серверная база — вместо `/F` используй `/S`, добавь `/N"<user>" /P"<pwd>"` при наличии учётных данных.
 
 ## Коды возврата
 
@@ -53,31 +57,17 @@ allowed-tools:
 | 0   | Успешная сборка             |
 | 1   | Ошибка (см. лог)           |
 
-## Автоопределение платформы (Windows)
+## Ссылочные типы
 
-Если `V8_PATH` не задан, можно найти автоматически:
-
-```powershell
-$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
-```
-
-## Ссылочные типы и выбор базы
-
-Пустая ИБ (`V8_BASE`) подходит для сборки, если формы используют только базовые типы (`xs:string`, `xs:boolean` и т.д.) или тип самой обработки (`ExternalDataProcessorObject.Имя`).
-
-Если обработка использует ссылочные типы конфигурации (`CatalogRef.XXX`, `DocumentRef.XXX` и т.д.) — в реквизитах объекта, табличных частях или реквизитах форм — **сборка в пустой базе упадёт** с ошибкой XDTO. Платформа не может резолвить типы, отсутствующие в конфигурации базы.
-
-**Решение**: собирать в базе с целевой конфигурацией. Если конфигурация неизвестна — спросить пользователя путь к базе.
+Если обработка использует ссылочные типы конфигурации (`CatalogRef.XXX`, `DocumentRef.XXX`) — сборка в пустой базе упадёт с ошибкой XDTO. Зарегистрируй базу с целевой конфигурацией через `/db-list add`.
 
 ## Пример полного цикла
 
 ```powershell
-$env:V8_PATH = "C:\Program Files\1cv8\8.3.25.1257\bin"
-$env:V8_BASE = ".\base"
+# Параметры из .v8-project.json:
+$v8path = "C:\Program Files\1cv8\8.3.25.1257\bin"  # v8path
+$base   = "C:\Bases\MyDB"                           # databases[].path
 
-# Создать ИБ
-& "$env:V8_PATH\1cv8.exe" CREATEINFOBASE "File=$env:V8_BASE"
-
-# Собрать
-& "$env:V8_PATH\1cv8.exe" DESIGNER /F $env:V8_BASE /DisableStartupDialogs /LoadExternalDataProcessorOrReportFromFiles "src\МояОбработка.xml" "build\МояОбработка.epf" /Out "build\build.log"
+# Собрать (база с конфигурацией — ссылочные типы резолвятся)
+& "$v8path\1cv8.exe" DESIGNER /F $base /DisableStartupDialogs /LoadExternalDataProcessorOrReportFromFiles "src\МояОбработка.xml" "build\МояОбработка.epf" /Out "build\build.log"
 ```
