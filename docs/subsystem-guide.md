@@ -6,7 +6,7 @@
 
 | Навык | Параметры | Описание |
 |-------|-----------|----------|
-| `/subsystem-info` | `<SubsystemPath> [-Mode] [-Name]` | Анализ структуры подсистемы: состав, дочерние, CI, дерево иерархии (4 режима) |
+| `/subsystem-info` | `<SubsystemPath> [-Mode] [-Name]` | Анализ структуры подсистемы: состав, дочерние, CI, дерево иерархии (5 режимов, включая full) |
 | `/subsystem-compile` | `<JsonPath> <OutputDir> [-Parent]` | Генерация подсистемы из JSON DSL: XML + регистрация в Configuration.xml |
 | `/subsystem-edit` | `<SubsystemPath> -Operation <op> -Value "<value>"` | Точечное редактирование: 5 операций (add/remove content/child, set-property) |
 | `/subsystem-validate` | `<SubsystemPath> [-MaxErrors 30]` | Валидация структурной корректности: 13 проверок |

@@ -2,7 +2,7 @@
 # Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 param(
 	[Parameter(Mandatory=$true)][string]$SubsystemPath,
-	[ValidateSet("overview","content","ci","tree")]
+	[ValidateSet("overview","content","ci","tree","full")]
 	[string]$Mode = "overview",
 	[string]$Name,
 	[int]$Limit = 150,
@@ -111,6 +111,174 @@ function Get-SubsystemDir([string]$xmlPath) {
 	$dir = [System.IO.Path]::GetDirectoryName($xmlPath)
 	$baseName = [System.IO.Path]::GetFileNameWithoutExtension($xmlPath)
 	return Join-Path $dir $baseName
+}
+
+# --- Show functions for full mode ---
+function Show-Overview {
+	Out "Подсистема: $subName"
+	if ($synonym -and $synonym -ne $subName) { Out "Синоним: $synonym" }
+	if ($commentText) { Out "Комментарий: $commentText" }
+	Out "ВключатьВКомандныйИнтерфейс: $inclCI"
+	Out "ИспользоватьОднуКоманду: $useOneCmd"
+	if ($explanation) { Out "Пояснение: $explanation" }
+	if ($picText) { Out "Картинка: $picText" }
+	if ($contentItems.Count -gt 0) {
+		$parts = @()
+		foreach ($type in $groups.Keys) {
+			$parts += "$type`: $($groups[$type].Count)"
+		}
+		Out "Состав: $($contentItems.Count) объектов ($($parts -join ', '))"
+	} else {
+		Out "Состав: пусто"
+	}
+	if ($childNames.Count -gt 0) {
+		Out "Дочерние подсистемы ($($childNames.Count)): $($childNames -join ', ')"
+	}
+	if ($hasCI) {
+		Out "Командный интерфейс: есть"
+	}
+}
+
+function Show-Content {
+	Out "Состав подсистемы $subName ($($contentItems.Count) объектов):"
+	Out ""
+	if ($Name) {
+		if ($groups.Contains($Name)) {
+			$filtered = $groups[$Name]
+			Out "$Name ($($filtered.Count)):"
+			foreach ($n in $filtered) { Out "  $n" }
+		} else {
+			Out "[INFO] Тип '$Name' не найден в составе."
+			Out "Доступные типы: $($groups.Keys -join ', ')"
+		}
+	} else {
+		foreach ($type in $groups.Keys) {
+			Out "$type ($($groups[$type].Count)):"
+			foreach ($n in $groups[$type]) { Out "  $n" }
+			Out ""
+		}
+	}
+}
+
+function Show-CI {
+	$localSubDir = Get-SubsystemDir $SubsystemPath
+	$localCiPath = Join-Path (Join-Path $localSubDir "Ext") "CommandInterface.xml"
+
+	if (-not (Test-Path $localCiPath)) {
+		Out "Командный интерфейс: $subName"
+		Out ""
+		Out "Файл CommandInterface.xml не найден."
+		Out "Путь: $localCiPath"
+	} else {
+		[xml]$ciDoc = Get-Content -Path $localCiPath -Encoding UTF8
+		$ciNs = New-Object System.Xml.XmlNamespaceManager($ciDoc.NameTable)
+		$ciNs.AddNamespace("ci", "http://v8.1c.ru/8.3/xcf/extrnprops")
+		$ciNs.AddNamespace("xr", "http://v8.1c.ru/8.3/xcf/readable")
+
+		$ciRoot = $ciDoc.DocumentElement
+
+		Out "Командный интерфейс: $subName"
+		Out ""
+
+		# --- CommandsVisibility ---
+		$visSection = $ciRoot.SelectSingleNode("ci:CommandsVisibility", $ciNs)
+		if ($visSection) {
+			$hidden = @(); $shown = @()
+			foreach ($cmd in $visSection.SelectNodes("ci:Command", $ciNs)) {
+				$cmdName = $cmd.GetAttribute("name")
+				$vis = $cmd.SelectSingleNode("ci:Visibility/xr:Common", $ciNs)
+				if ($vis -and $vis.InnerText -eq "false") { $hidden += $cmdName }
+				else { $shown += $cmdName }
+			}
+			$total = $hidden.Count + $shown.Count
+			if (-not $Name -or $Name -eq "visibility") {
+				Out "Видимость ($total):"
+				if ($hidden.Count -gt 0) {
+					Out "  СКРЫТО ($($hidden.Count)):"
+					foreach ($h in $hidden) { Out "    $h" }
+				}
+				if ($shown.Count -gt 0) {
+					Out "  ПОКАЗАНО ($($shown.Count)):"
+					foreach ($s in $shown) { Out "    $s" }
+				}
+				Out ""
+			}
+		}
+
+		# --- CommandsPlacement ---
+		$placeSection = $ciRoot.SelectSingleNode("ci:CommandsPlacement", $ciNs)
+		if ($placeSection) {
+			$placements = @()
+			foreach ($cmd in $placeSection.SelectNodes("ci:Command", $ciNs)) {
+				$cmdName = $cmd.GetAttribute("name")
+				$grp = $cmd.SelectSingleNode("ci:CommandGroup", $ciNs)
+				$pl = $cmd.SelectSingleNode("ci:Placement", $ciNs)
+				$grpText = if ($grp) { $grp.InnerText } else { "?" }
+				$plText = if ($pl) { $pl.InnerText } else { "?" }
+				$placements += @{ Name=$cmdName; Group=$grpText; Placement=$plText }
+			}
+			if ((-not $Name -or $Name -eq "placement") -and $placements.Count -gt 0) {
+				Out "Размещение ($($placements.Count)):"
+				$arrow = [char]0x2192
+				foreach ($p in $placements) {
+					Out "  $($p.Name) $arrow $($p.Group) ($($p.Placement))"
+				}
+				Out ""
+			}
+		}
+
+		# --- CommandsOrder ---
+		$orderSection = $ciRoot.SelectSingleNode("ci:CommandsOrder", $ciNs)
+		if ($orderSection) {
+			$orderGroups = [ordered]@{}
+			foreach ($cmd in $orderSection.SelectNodes("ci:Command", $ciNs)) {
+				$cmdName = $cmd.GetAttribute("name")
+				$grp = $cmd.SelectSingleNode("ci:CommandGroup", $ciNs)
+				$grpText = if ($grp) { $grp.InnerText } else { "?" }
+				if (-not $orderGroups.Contains($grpText)) { $orderGroups[$grpText] = @() }
+				$orderGroups[$grpText] += $cmdName
+			}
+			$totalOrder = 0
+			foreach ($k in $orderGroups.Keys) { $totalOrder += $orderGroups[$k].Count }
+			if ((-not $Name -or $Name -eq "order") -and $totalOrder -gt 0) {
+				Out "Порядок команд ($totalOrder):"
+				foreach ($grpName in $orderGroups.Keys) {
+					Out "  [$grpName]:"
+					foreach ($c in $orderGroups[$grpName]) { Out "    $c" }
+				}
+				Out ""
+			}
+		}
+
+		# --- SubsystemsOrder ---
+		$subOrderSection = $ciRoot.SelectSingleNode("ci:SubsystemsOrder", $ciNs)
+		if ($subOrderSection) {
+			$subOrder = @()
+			foreach ($s in $subOrderSection.SelectNodes("ci:Subsystem", $ciNs)) {
+				$subOrder += $s.InnerText
+			}
+			if ((-not $Name -or $Name -eq "subsystems") -and $subOrder.Count -gt 0) {
+				Out "Порядок подсистем ($($subOrder.Count)):"
+				for ($i = 0; $i -lt $subOrder.Count; $i++) {
+					Out "  $($i+1). $($subOrder[$i])"
+				}
+				Out ""
+			}
+		}
+
+		# --- GroupsOrder ---
+		$grpOrderSection = $ciRoot.SelectSingleNode("ci:GroupsOrder", $ciNs)
+		if ($grpOrderSection) {
+			$grpOrder = @()
+			foreach ($g in $grpOrderSection.SelectNodes("ci:Group", $ciNs)) {
+				$grpOrder += $g.InnerText
+			}
+			if ((-not $Name -or $Name -eq "groups") -and $grpOrder.Count -gt 0) {
+				Out "Порядок групп ($($grpOrder.Count)):"
+				foreach ($g in $grpOrder) { Out "  $g" }
+			}
+		}
+	}
 }
 
 # ============================================================
@@ -225,124 +393,7 @@ if ($Mode -eq "tree") {
 	$props = $sub.SelectSingleNode("md:Properties", $ns)
 	$subName = $props.SelectSingleNode("md:Name", $ns).InnerText
 
-	$subDir = Get-SubsystemDir $SubsystemPath
-	$ciPath = Join-Path (Join-Path $subDir "Ext") "CommandInterface.xml"
-
-	if (-not (Test-Path $ciPath)) {
-		Out "Командный интерфейс: $subName"
-		Out ""
-		Out "Файл CommandInterface.xml не найден."
-		Out "Путь: $ciPath"
-	} else {
-		[xml]$ciDoc = Get-Content -Path $ciPath -Encoding UTF8
-		$ciNs = New-Object System.Xml.XmlNamespaceManager($ciDoc.NameTable)
-		$ciNs.AddNamespace("ci", "http://v8.1c.ru/8.3/xcf/extrnprops")
-		$ciNs.AddNamespace("xr", "http://v8.1c.ru/8.3/xcf/readable")
-
-		$ciRoot = $ciDoc.DocumentElement
-
-		Out "Командный интерфейс: $subName"
-		Out ""
-
-		# --- CommandsVisibility ---
-		$visSection = $ciRoot.SelectSingleNode("ci:CommandsVisibility", $ciNs)
-		if ($visSection) {
-			$hidden = @(); $shown = @()
-			foreach ($cmd in $visSection.SelectNodes("ci:Command", $ciNs)) {
-				$cmdName = $cmd.GetAttribute("name")
-				$vis = $cmd.SelectSingleNode("ci:Visibility/xr:Common", $ciNs)
-				if ($vis -and $vis.InnerText -eq "false") { $hidden += $cmdName }
-				else { $shown += $cmdName }
-			}
-			$total = $hidden.Count + $shown.Count
-			if (-not $Name -or $Name -eq "visibility") {
-				Out "Видимость ($total):"
-				if ($hidden.Count -gt 0) {
-					Out "  СКРЫТО ($($hidden.Count)):"
-					foreach ($h in $hidden) { Out "    $h" }
-				}
-				if ($shown.Count -gt 0) {
-					Out "  ПОКАЗАНО ($($shown.Count)):"
-					foreach ($s in $shown) { Out "    $s" }
-				}
-				Out ""
-			}
-		}
-
-		# --- CommandsPlacement ---
-		$placeSection = $ciRoot.SelectSingleNode("ci:CommandsPlacement", $ciNs)
-		if ($placeSection) {
-			$placements = @()
-			foreach ($cmd in $placeSection.SelectNodes("ci:Command", $ciNs)) {
-				$cmdName = $cmd.GetAttribute("name")
-				$grp = $cmd.SelectSingleNode("ci:CommandGroup", $ciNs)
-				$pl = $cmd.SelectSingleNode("ci:Placement", $ciNs)
-				$grpText = if ($grp) { $grp.InnerText } else { "?" }
-				$plText = if ($pl) { $pl.InnerText } else { "?" }
-				$placements += @{ Name=$cmdName; Group=$grpText; Placement=$plText }
-			}
-			if ((-not $Name -or $Name -eq "placement") -and $placements.Count -gt 0) {
-				Out "Размещение ($($placements.Count)):"
-				$arrow = [char]0x2192
-				foreach ($p in $placements) {
-					Out "  $($p.Name) $arrow $($p.Group) ($($p.Placement))"
-				}
-				Out ""
-			}
-		}
-
-		# --- CommandsOrder ---
-		$orderSection = $ciRoot.SelectSingleNode("ci:CommandsOrder", $ciNs)
-		if ($orderSection) {
-			$orderGroups = [ordered]@{}
-			foreach ($cmd in $orderSection.SelectNodes("ci:Command", $ciNs)) {
-				$cmdName = $cmd.GetAttribute("name")
-				$grp = $cmd.SelectSingleNode("ci:CommandGroup", $ciNs)
-				$grpText = if ($grp) { $grp.InnerText } else { "?" }
-				if (-not $orderGroups.Contains($grpText)) { $orderGroups[$grpText] = @() }
-				$orderGroups[$grpText] += $cmdName
-			}
-			$totalOrder = 0
-			foreach ($k in $orderGroups.Keys) { $totalOrder += $orderGroups[$k].Count }
-			if ((-not $Name -or $Name -eq "order") -and $totalOrder -gt 0) {
-				Out "Порядок команд ($totalOrder):"
-				foreach ($grpName in $orderGroups.Keys) {
-					Out "  [$grpName]:"
-					foreach ($c in $orderGroups[$grpName]) { Out "    $c" }
-				}
-				Out ""
-			}
-		}
-
-		# --- SubsystemsOrder ---
-		$subOrderSection = $ciRoot.SelectSingleNode("ci:SubsystemsOrder", $ciNs)
-		if ($subOrderSection) {
-			$subOrder = @()
-			foreach ($s in $subOrderSection.SelectNodes("ci:Subsystem", $ciNs)) {
-				$subOrder += $s.InnerText
-			}
-			if ((-not $Name -or $Name -eq "subsystems") -and $subOrder.Count -gt 0) {
-				Out "Порядок подсистем ($($subOrder.Count)):"
-				for ($i = 0; $i -lt $subOrder.Count; $i++) {
-					Out "  $($i+1). $($subOrder[$i])"
-				}
-				Out ""
-			}
-		}
-
-		# --- GroupsOrder ---
-		$grpOrderSection = $ciRoot.SelectSingleNode("ci:GroupsOrder", $ciNs)
-		if ($grpOrderSection) {
-			$grpOrder = @()
-			foreach ($g in $grpOrderSection.SelectNodes("ci:Group", $ciNs)) {
-				$grpOrder += $g.InnerText
-			}
-			if ((-not $Name -or $Name -eq "groups") -and $grpOrder.Count -gt 0) {
-				Out "Порядок групп ($($grpOrder.Count)):"
-				foreach ($g in $grpOrder) { Out "  $g" }
-			}
-		}
-	}
+	Show-CI
 
 } else {
 # ============================================================
@@ -398,56 +449,15 @@ if ($Mode -eq "tree") {
 	$hasCI = Test-Path $ciPath
 
 	if ($Mode -eq "overview") {
-		Out "Подсистема: $subName"
-		if ($synonym -and $synonym -ne $subName) { Out "Синоним: $synonym" }
-		if ($commentText) { Out "Комментарий: $commentText" }
-		Out "ВключатьВКомандныйИнтерфейс: $inclCI"
-		Out "ИспользоватьОднуКоманду: $useOneCmd"
-		if ($explanation) { Out "Пояснение: $explanation" }
-		if ($picText) { Out "Картинка: $picText" }
-
-		# Content summary
-		if ($contentItems.Count -gt 0) {
-			$parts = @()
-			foreach ($type in $groups.Keys) {
-				$parts += "$type`: $($groups[$type].Count)"
-			}
-			Out "Состав: $($contentItems.Count) объектов ($($parts -join ', '))"
-		} else {
-			Out "Состав: пусто"
-		}
-
-		# Children
-		if ($childNames.Count -gt 0) {
-			Out "Дочерние подсистемы ($($childNames.Count)): $($childNames -join ', ')"
-		}
-
-		# CI
-		if ($hasCI) {
-			Out "Командный интерфейс: есть"
-		}
-
+		Show-Overview
 	} elseif ($Mode -eq "content") {
-		Out "Состав подсистемы $subName ($($contentItems.Count) объектов):"
-		Out ""
-
-		if ($Name) {
-			# Filter by type
-			if ($groups.Contains($Name)) {
-				$filtered = $groups[$Name]
-				Out "$Name ($($filtered.Count)):"
-				foreach ($n in $filtered) { Out "  $n" }
-			} else {
-				Out "[INFO] Тип '$Name' не найден в составе."
-				Out "Доступные типы: $($groups.Keys -join ', ')"
-			}
-		} else {
-			foreach ($type in $groups.Keys) {
-				Out "$type ($($groups[$type].Count)):"
-				foreach ($n in $groups[$type]) { Out "  $n" }
-				Out ""
-			}
-		}
+		Show-Content
+	} elseif ($Mode -eq "full") {
+		Show-Overview
+		Out ""; Out "--- content ---"; Out ""
+		Show-Content
+		Out ""; Out "--- ci ---"; Out ""
+		Show-CI
 	}
 }
 
