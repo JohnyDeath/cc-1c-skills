@@ -1,4 +1,4 @@
-﻿# meta-remove v1.0 — Remove metadata object from 1C configuration dump
+﻿# meta-remove v1.1 — Remove metadata object from 1C configuration dump
 # Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 param(
 	[Parameter(Mandatory)]
@@ -9,7 +9,9 @@ param(
 
 	[switch]$DryRun,
 
-	[switch]$KeepFiles
+	[switch]$KeepFiles,
+
+	[switch]$Force
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,7 +96,7 @@ if (-not $typePluralMap.ContainsKey($objType)) {
 
 $typePlural = $typePluralMap[$objType]
 
-Write-Host "=== meta-remove: $objType.$objName ==="
+Write-Host "=== meta-remove: ${objType}.${objName} ==="
 Write-Host ""
 
 if ($DryRun) {
@@ -125,7 +127,171 @@ if (-not $hasXml -and -not $hasDir) {
 	}
 }
 
-# --- 2. Remove from Configuration.xml ChildObjects ---
+# --- 2. Reference check ---
+
+Write-Host ""
+Write-Host "--- Reference check ---"
+
+# Build search patterns based on object type
+
+# Type → reference type name (used in XML <v8:Type> elements)
+$typeRefNames = @{
+	"Catalog"                    = @("CatalogRef","CatalogObject")
+	"Document"                   = @("DocumentRef","DocumentObject")
+	"Enum"                       = @("EnumRef")
+	"ExchangePlan"               = @("ExchangePlanRef","ExchangePlanObject")
+	"ChartOfAccounts"            = @("ChartOfAccountsRef","ChartOfAccountsObject")
+	"ChartOfCharacteristicTypes" = @("ChartOfCharacteristicTypesRef","ChartOfCharacteristicTypesObject")
+	"ChartOfCalculationTypes"    = @("ChartOfCalculationTypesRef","ChartOfCalculationTypesObject")
+	"BusinessProcess"            = @("BusinessProcessRef","BusinessProcessObject")
+	"Task"                       = @("TaskRef","TaskObject")
+}
+
+# Type → Russian manager name (used in BSL code: Справочники.Товары)
+$typeRuManager = @{
+	"Catalog"                    = "Справочники"
+	"Document"                   = "Документы"
+	"Enum"                       = "Перечисления"
+	"Constant"                   = "Константы"
+	"InformationRegister"        = "РегистрыСведений"
+	"AccumulationRegister"       = "РегистрыНакопления"
+	"AccountingRegister"         = "РегистрыБухгалтерии"
+	"CalculationRegister"        = "РегистрыРасчета"
+	"ChartOfAccounts"            = "ПланыСчетов"
+	"ChartOfCharacteristicTypes" = "ПланыВидовХарактеристик"
+	"ChartOfCalculationTypes"    = "ПланыВидовРасчета"
+	"BusinessProcess"            = "БизнесПроцессы"
+	"Task"                       = "Задачи"
+	"ExchangePlan"               = "ПланыОбмена"
+	"Report"                     = "Отчеты"
+	"DataProcessor"              = "Обработки"
+	"DocumentJournal"            = "ЖурналыДокументов"
+	"CommonModule"               = $null
+}
+
+$searchPatterns = @()
+
+# 1) XML type references: CatalogRef.Name, CatalogObject.Name
+if ($typeRefNames.ContainsKey($objType)) {
+	foreach ($refName in $typeRefNames[$objType]) {
+		$searchPatterns += "$refName.$objName"
+	}
+}
+
+# 2) BSL code references: Справочники.Name, Catalogs.Name
+$ruMgr = $typeRuManager[$objType]
+if ($ruMgr) {
+	$searchPatterns += "$ruMgr.$objName"
+}
+# English manager = plural directory name
+$searchPatterns += "$typePlural.$objName"
+
+# 3) CommonModule: method calls in BSL (ModuleName.)
+if ($objType -eq "CommonModule") {
+	$searchPatterns += "$objName."
+}
+
+# 4) ScheduledJob/EventSubscription handler references
+if ($objType -eq "CommonModule") {
+	$searchPatterns += "<Handler>$objName."
+	$searchPatterns += "<MethodName>$objName."
+}
+
+# Exclude object's own files from search
+$excludeDirs = @()
+if ($hasDir) { $excludeDirs += $objDir }
+$excludeFile = ""
+if ($hasXml) { $excludeFile = $objXml }
+
+# Search all XML and BSL files
+$references = @()
+$searchExtensions = @("*.xml", "*.bsl")
+
+foreach ($ext in $searchExtensions) {
+	$files = @(Get-ChildItem $ConfigDir -Filter $ext -Recurse -File -ErrorAction SilentlyContinue)
+	foreach ($file in $files) {
+		# Skip own files
+		if ($excludeFile -and $file.FullName -eq $excludeFile) { continue }
+		if ($excludeDirs.Count -gt 0) {
+			$skip = $false
+			foreach ($ed in $excludeDirs) {
+				if ($file.FullName.StartsWith($ed)) { $skip = $true; break }
+			}
+			if ($skip) { continue }
+		}
+
+		$content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+		foreach ($pat in $searchPatterns) {
+			if ($content.Contains($pat)) {
+				$relPath = $file.FullName.Substring($ConfigDir.Length + 1)
+				$references += @{ File = $relPath; Pattern = $pat }
+				break  # one match per file is enough
+			}
+		}
+	}
+}
+
+# Also check for Type.Name references (subsystem content, doc journal, etc.) — but NOT in own files
+$typeNameRef = "${objType}.${objName}"
+$files = @(Get-ChildItem $ConfigDir -Filter "*.xml" -Recurse -File -ErrorAction SilentlyContinue)
+foreach ($file in $files) {
+	if ($excludeFile -and $file.FullName -eq $excludeFile) { continue }
+	if ($excludeDirs.Count -gt 0) {
+		$skip = $false
+		foreach ($ed in $excludeDirs) {
+			if ($file.FullName.StartsWith($ed)) { $skip = $true; break }
+		}
+		if ($skip) { continue }
+	}
+	# Skip Configuration.xml and Subsystems — they will be cleaned automatically
+	$relPath = $file.FullName.Substring($ConfigDir.Length + 1)
+	if ($relPath -eq "Configuration.xml") { continue }
+	if ($relPath -eq "ConfigDumpInfo.xml") { continue }
+	if ($relPath.StartsWith("Subsystems")) { continue }
+
+	$content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+	if ($content.Contains($typeNameRef)) {
+		# Check it's not already in references
+		$alreadyFound = $false
+		foreach ($r in $references) {
+			if ($r.File -eq $relPath) { $alreadyFound = $true; break }
+		}
+		if (-not $alreadyFound) {
+			$references += @{ File = $relPath; Pattern = $typeNameRef }
+		}
+	}
+}
+
+if ($references.Count -gt 0) {
+	Write-Host "[WARN]  Found $($references.Count) reference(s) to ${objType}.${objName}:"
+	Write-Host ""
+	$shown = 0
+	foreach ($ref in $references) {
+		Write-Host "        $($ref.File)"
+		Write-Host "          pattern: $($ref.Pattern)"
+		$shown++
+		if ($shown -ge 20) {
+			$remaining = $references.Count - $shown
+			if ($remaining -gt 0) {
+				Write-Host "        ... and $remaining more"
+			}
+			break
+		}
+	}
+	Write-Host ""
+
+	if (-not $Force) {
+		Write-Host "[ERROR] Cannot remove: object has $($references.Count) reference(s)."
+		Write-Host "        Use -Force to remove anyway, or fix references first."
+		exit 1
+	} else {
+		Write-Host "[WARN]  -Force specified, proceeding despite references"
+	}
+} else {
+	Write-Host "[OK]    No references found"
+}
+
+# --- 3. Remove from Configuration.xml ChildObjects ---
 
 Write-Host ""
 Write-Host "--- Configuration.xml ---"
@@ -178,7 +344,7 @@ if (-not $cfgNode) {
 	}
 }
 
-# --- 3. Remove from subsystem Content ---
+# --- 4. Remove from subsystem Content ---
 
 Write-Host ""
 Write-Host "--- Subsystems ---"
@@ -213,7 +379,7 @@ function Remove-FromSubsystems {
 		$ssName = if ($ssNameNode) { $ssNameNode.InnerText } else { $xmlFile.BaseName }
 
 		# Content items are <v8:Value>Type.Name</v8:Value>
-		$targetRef = "$objType.$objName"
+		$targetRef = "${objType}.${objName}"
 		$modified = $false
 
 		foreach ($item in @($contentNode.ChildNodes)) {
@@ -260,7 +426,7 @@ if (Test-Path $subsystemsDir -PathType Container) {
 	Write-Host "[OK]    No Subsystems directory"
 }
 
-# --- 4. Delete object files ---
+# --- 5. Delete object files ---
 
 Write-Host ""
 Write-Host "--- Files ---"
