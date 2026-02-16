@@ -1,6 +1,6 @@
 ---
 name: cfe-diff
-description: Анализ расширения конфигурации 1С (CFE) — обзор изменений и проверка переноса. Используй для понимания что изменено в расширении или для проверки перенесены ли изменения из расширения в конфигурацию
+description: Анализ расширения конфигурации 1С (CFE) — состав, заимствованные объекты, перехватчики, проверка переноса. Используй когда нужно понять что содержит расширение или проверить перенесены ли вставки в конфигурацию
 argument-hint: -ExtensionPath <path> -ConfigPath <path> [-Mode A|B]
 allowed-tools:
   - Bash
@@ -23,7 +23,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\cfe-diff\scripts\cfe-diff.ps1 -ExtensionPath src -ConfigPath C:\cfsrc\erp -Mode A
+powershell.exe -NoProfile -File .claude/skills/cfe-diff/scripts/cfe-diff.ps1 -ExtensionPath src -ConfigPath C:\cfsrc\erp -Mode A
 ```
 
 ## Mode A — обзор расширения

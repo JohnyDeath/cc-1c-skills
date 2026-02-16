@@ -31,13 +31,12 @@ allowed-tools:
 - `Document.РеализацияТоваров` — документ
 - `Enum.ВидыОплат` — перечисление
 - `Catalog.X ;; CommonModule.Y ;; Enum.Z` — несколько объектов
-
 Поддерживаются все 44 типа объектов конфигурации.
 
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\cfe-borrow\scripts\cfe-borrow.ps1 -ExtensionPath src -ConfigPath C:\cfsrc\erp -Object "Catalog.Контрагенты"
+powershell.exe -NoProfile -File .claude/skills/cfe-borrow/scripts/cfe-borrow.ps1 -ExtensionPath src -ConfigPath C:\cfsrc\erp -Object "Catalog.Контрагенты"
 ```
 
 ## Примеры

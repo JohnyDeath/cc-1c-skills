@@ -34,26 +34,27 @@ allowed-tools:
 
 ## Команда
 
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /F "<база>" /N"<user>" /P"<pwd>" /UpdateDBCfg /DisableStartupDialogs /Out "<лог>"
+```powershell
+powershell.exe -NoProfile -File .claude/skills/db-update/scripts/db-update.ps1 <параметры>
 ```
 
-Для серверной базы вместо `/F` используй `/S`:
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /S "<server>/<ref>" /N"<user>" /P"<pwd>" /UpdateDBCfg /DisableStartupDialogs /Out "<лог>"
-```
+### Параметры скрипта
 
-### Параметры
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-Extension <имя>` | нет | Обновить расширение |
+| `-AllExtensions` | нет | Обновить все расширения |
+| `-Dynamic <+/->` | нет | `+` — динамическое обновление, `-` — отключить |
+| `-Server` | нет | Обновление на стороне сервера |
+| `-WarningsAsErrors` | нет | Предупреждения считать ошибками |
 
-| Параметр | Описание |
-|----------|----------|
-| `/UpdateDBCfg` | Обновить конфигурацию БД |
-| `-Dynamic+` | Динамическое обновление (без монопольного доступа) |
-| `-Dynamic-` | Отключить динамическое обновление |
-| `-Server` | Обновление на стороне сервера |
-| `-WarningsAsErrors` | Предупреждения считать ошибками |
-| `-Extension <имя>` | Обновить расширение |
-| `-AllExtensions` | Обновить все расширения |
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ### Фоновое обновление (серверная база)
 
@@ -78,14 +79,15 @@ allowed-tools:
 - Для серверных баз рекомендуется `-Dynamic+` для обновления без остановки
 - Если структура данных существенно изменилась (удаление реквизитов, изменение типов) — динамическое обновление может быть невозможно
 
-## Пример
+## Примеры
 
 ```powershell
-$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
+# Обычное обновление (файловая база)
+powershell.exe -NoProfile -File .claude/skills/db-update/scripts/db-update.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin"
 
-# Обычное обновление
-& $v8.FullName DESIGNER /F "C:\Bases\MyDB" /N"Admin" /P"" /UpdateDBCfg /DisableStartupDialogs /Out "update.log"
+# Динамическое обновление (серверная база)
+powershell.exe -NoProfile -File .claude/skills/db-update/scripts/db-update.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyDB" -UserName "Admin" -Password "secret" -Dynamic "+"
 
-# Динамическое обновление
-& $v8.FullName DESIGNER /S "srv01/MyDB" /N"Admin" /P"secret" /UpdateDBCfg -Dynamic+ /DisableStartupDialogs /Out "update.log"
+# Обновление расширения
+powershell.exe -NoProfile -File .claude/skills/db-update/scripts/db-update.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -Extension "МоёРасширение"
 ```

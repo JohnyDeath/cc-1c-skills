@@ -36,21 +36,26 @@ allowed-tools:
 Если `v8path` не задан — автоопределение: `Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort -Desc | Select -First 1`
 Если использованная база не зарегистрирована — после выполнения предложи добавить через `/db-list add`.
 
-## Команды
+## Команда
 
-### 1. Создать ИБ для сборки (если нет зарегистрированной базы)
-
-```cmd
-"<v8path>\1cv8.exe" CREATEINFOBASE File="./base"
+```powershell
+powershell.exe -NoProfile -File .claude/skills/epf-build/scripts/epf-build.ps1 <параметры>
 ```
 
-### 2. Сборка EPF из XML
+### Параметры скрипта
 
-Файловая база:
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /F "<база>" /DisableStartupDialogs /LoadExternalDataProcessorOrReportFromFiles "<SrcDir>\<ProcessorName>.xml" "<OutDir>\<ProcessorName>.epf" /Out "<OutDir>\build.log"
-```
-Серверная база — вместо `/F` используй `/S`, добавь `/N"<user>" /P"<pwd>"` при наличии учётных данных.
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-SourceFile <путь>` | да | Путь к корневому XML-файлу исходников |
+| `-OutputFile <путь>` | да | Путь к выходному EPF/ERF-файлу |
+
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ## Коды возврата
 
@@ -63,13 +68,12 @@ allowed-tools:
 
 Если обработка использует ссылочные типы конфигурации (`CatalogRef.XXX`, `DocumentRef.XXX`) — сборка в пустой базе упадёт с ошибкой XDTO. Зарегистрируй базу с целевой конфигурацией через `/db-list add`.
 
-## Пример полного цикла
+## Примеры
 
 ```powershell
-# Параметры из .v8-project.json:
-$v8path = "C:\Program Files\1cv8\8.3.25.1257\bin"  # v8path
-$base   = "C:\Bases\MyDB"                           # databases[].path
+# Сборка обработки (файловая база)
+powershell.exe -NoProfile -File .claude/skills/epf-build/scripts/epf-build.ps1 -InfoBasePath "C:\Bases\MyDB" -SourceFile "src\МояОбработка.xml" -OutputFile "build\МояОбработка.epf"
 
-# Собрать (база с конфигурацией — ссылочные типы резолвятся)
-& "$v8path\1cv8.exe" DESIGNER /F $base /DisableStartupDialogs /LoadExternalDataProcessorOrReportFromFiles "src\МояОбработка.xml" "build\МояОбработка.epf" /Out "build\build.log"
+# Серверная база
+powershell.exe -NoProfile -File .claude/skills/epf-build/scripts/epf-build.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyDB" -UserName "Admin" -Password "secret" -SourceFile "src\МояОбработка.xml" -OutputFile "build\МояОбработка.epf"
 ```

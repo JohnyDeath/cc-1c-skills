@@ -21,7 +21,7 @@ allowed-tools:
 | `RolesDir` | Каталог `Roles/` в исходниках конфигурации |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\role-compile\scripts\role-compile.ps1 -JsonPath "<json>" -OutputDir "<RolesDir>"
+powershell.exe -NoProfile -File .claude/skills/role-compile/scripts/role-compile.ps1 -JsonPath "<json>" -OutputDir "<RolesDir>"
 ```
 
 `<Role>ИмяРоли</Role>` автоматически добавляется в `<ChildObjects>` файла `Configuration.xml` (ожидается в parent от `RolesDir`).

@@ -20,7 +20,7 @@ allowed-tools:
 ## Запуск скрипта
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\role-validate\scripts\role-validate.ps1 -RightsPath <path> [-MetadataPath <path>] [-OutFile <output.txt>]
+powershell.exe -NoProfile -File .claude/skills/role-validate/scripts/role-validate.ps1 -RightsPath <path> [-MetadataPath <path>] [-OutFile <output.txt>]
 ```
 
 ### Параметры

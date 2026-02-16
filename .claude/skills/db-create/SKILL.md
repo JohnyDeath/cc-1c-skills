@@ -28,30 +28,25 @@ allowed-tools:
 Если `v8path` не задан — автоопределение: `Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort -Desc | Select -First 1`
 После создания базы предложи зарегистрировать через `/db-list add`.
 
-## Команды
+## Команда
 
-### Файловая база
-
-```cmd
-"<v8path>\1cv8.exe" CREATEINFOBASE File="<путь>" /DisableStartupDialogs /Out "<лог>"
+```powershell
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 <параметры>
 ```
 
-### Серверная база
+### Параметры скрипта
 
-```cmd
-"<v8path>\1cv8.exe" CREATEINFOBASE Srvr="<сервер>";Ref="<имя>" /DisableStartupDialogs /Out "<лог>"
-```
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Путь к файловой базе |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UseTemplate <файл>` | нет | Создать из шаблона (.cf или .dt) |
+| `-AddToList` | нет | Добавить в список баз 1С |
+| `-ListName <имя>` | нет | Имя базы в списке |
 
-### Параметры
-
-| Параметр | Описание |
-|----------|----------|
-| `File="<путь>"` | Строка соединения для файловой базы |
-| `Srvr="<сервер>";Ref="<имя>"` | Строка соединения для серверной базы |
-| `/AddToList [<имя>]` | Добавить в список баз 1С (необязательно) |
-| `/UseTemplate <файл>` | Создать из шаблона (.cf или .dt) |
-| `/DisableStartupDialogs` | Подавить диалоги |
-| `/Out <файл>` | Лог-файл |
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ## Коды возврата
 
@@ -69,14 +64,15 @@ allowed-tools:
 ## Примеры
 
 ```powershell
-$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
-
 # Создать файловую базу
-& $v8.FullName CREATEINFOBASE File="C:\Bases\NewDB" /DisableStartupDialogs /Out "create.log"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBasePath "C:\Bases\NewDB"
 
 # Создать серверную базу
-& $v8.FullName CREATEINFOBASE Srvr="srv01";Ref="MyApp_Test" /DisableStartupDialogs /Out "create.log"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Test"
 
 # Создать из шаблона CF
-& $v8.FullName CREATEINFOBASE File="C:\Bases\NewDB" /UseTemplate "C:\Templates\config.cf" /DisableStartupDialogs /Out "create.log"
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBasePath "C:\Bases\NewDB" -UseTemplate "C:\Templates\config.cf"
+
+# Создать и добавить в список баз
+powershell.exe -NoProfile -File .claude/skills/db-create/scripts/db-create.ps1 -InfoBasePath "C:\Bases\NewDB" -AddToList -ListName "Новая база"
 ```

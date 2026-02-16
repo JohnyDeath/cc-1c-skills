@@ -21,7 +21,7 @@ allowed-tools:
 | `OutFile` | Записать результат в файл |
 
 ```powershell
-powershell.exe -NoProfile -File '.claude\skills\subsystem-validate\scripts\subsystem-validate.ps1' -SubsystemPath '<путь>'
+powershell.exe -NoProfile -File '.claude/skills/subsystem-validate/scripts/subsystem-validate.ps1' -SubsystemPath '<путь>'
 ```
 
 ## Проверки (13)

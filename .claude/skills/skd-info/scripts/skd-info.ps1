@@ -3,7 +3,7 @@
 param(
 	[Parameter(Mandatory=$true)]
 	[string]$TemplatePath,
-	[ValidateSet("overview", "query", "fields", "links", "calculated", "resources", "params", "variant", "trace", "templates")]
+	[ValidateSet("overview", "query", "fields", "links", "calculated", "resources", "params", "variant", "trace", "templates", "full")]
 	[string]$Mode = "overview",
 	[string]$Name,
 	[int]$Batch = 0,
@@ -289,11 +289,7 @@ for ($i = $pathParts.Count - 1; $i -ge 0; $i--) {
 
 $totalXmlLines = (Get-Content $resolvedPath).Count
 
-# ============================================================
-# MODE: overview
-# ============================================================
-if ($Mode -eq "overview") {
-
+function Show-Overview {
 	$lines.Add("=== DCS: $templateName ($totalXmlLines lines) ===")
 	$lines.Add("")
 
@@ -482,7 +478,9 @@ if ($Mode -eq "overview") {
 			$lines.Add("  [$varIdx] $vName$vPresStr$structStr$filterStr")
 		}
 	}
+}
 
+function Show-OverviewHints {
 	# Hints — suggest next commands
 	$lines.Add("")
 	$hints = @()
@@ -519,27 +517,35 @@ if ($Mode -eq "overview") {
 	if ($totalCount -gt 0) {
 		$hints += "-Mode resources         resource aggregation ($totalCount)"
 	}
+	$params = $root.SelectNodes("s:parameter", $ns)
 	if ($params.Count -gt 0) {
 		$hints += "-Mode params            parameter details"
 	}
+	$variants = $root.SelectNodes("s:settingsVariant", $ns)
 	if ($variants.Count -eq 1) {
 		$hints += "-Mode variant           variant structure"
 	} elseif ($variants.Count -gt 1) {
 		$hints += "-Mode variant -Name <N> variant structure (1..$($variants.Count))"
 	}
+	$tplDefs = $root.SelectNodes("s:template", $ns)
 	if ($tplDefs.Count -gt 0) {
 		$hints += "-Mode templates         template bindings and expressions"
 	}
 	$hints += "-Mode trace -Name <f>   trace field origin (by name or title)"
+	$hints += "-Mode full              all sections at once"
 	$lines.Add("Next:")
 	foreach ($h in $hints) { $lines.Add("  $h") }
 }
 
 # ============================================================
-# MODE: query
+# MODE: overview
 # ============================================================
-elseif ($Mode -eq "query") {
+if ($Mode -eq "overview") {
+	Show-Overview
+	Show-OverviewHints
+}
 
+function Show-Query {
 	# Find dataset
 	$dataSets = $root.SelectNodes("s:dataSet", $ns)
 	$targetDs = $null
@@ -666,10 +672,13 @@ elseif ($Mode -eq "query") {
 }
 
 # ============================================================
-# MODE: fields
+# MODE: query
 # ============================================================
-elseif ($Mode -eq "fields") {
+if ($Mode -eq "query") {
+	Show-Query
+}
 
+function Show-Fields {
 	$dataSets = $root.SelectNodes("s:dataSet", $ns)
 
 	function Show-DataSetFields($dsNode) {
@@ -882,6 +891,13 @@ elseif ($Mode -eq "fields") {
 }
 
 # ============================================================
+# MODE: fields
+# ============================================================
+if ($Mode -eq "fields") {
+	Show-Fields
+}
+
+# ============================================================
 # MODE: links
 # ============================================================
 elseif ($Mode -eq "links") {
@@ -980,11 +996,7 @@ elseif ($Mode -eq "calculated") {
 	}
 }
 
-# ============================================================
-# MODE: resources
-# ============================================================
-elseif ($Mode -eq "resources") {
-
+function Show-Resources {
 	$totalFields = $root.SelectNodes("s:totalField", $ns)
 	if ($totalFields.Count -eq 0) {
 		$lines.Add("(no resources)")
@@ -1031,10 +1043,13 @@ elseif ($Mode -eq "resources") {
 }
 
 # ============================================================
-# MODE: params
+# MODE: resources
 # ============================================================
-elseif ($Mode -eq "params") {
+if ($Mode -eq "resources") {
+	Show-Resources
+}
 
+function Show-Params {
 	$params = $root.SelectNodes("s:parameter", $ns)
 	$lines.Add("=== Parameters ($($params.Count)) ===")
 	$lines.Add("  Name                            Type                   Default          Visible  Expression")
@@ -1096,10 +1111,13 @@ elseif ($Mode -eq "params") {
 }
 
 # ============================================================
-# MODE: variant
+# MODE: params
 # ============================================================
-elseif ($Mode -eq "variant") {
+if ($Mode -eq "params") {
+	Show-Params
+}
 
+function Show-Variant {
 	$variants = $root.SelectNodes("s:settingsVariant", $ns)
 
 	if (-not $Name) {
@@ -1272,6 +1290,30 @@ elseif ($Mode -eq "variant") {
 		}
 	}
 	} # end else (variant detail)
+}
+
+# ============================================================
+# MODE: variant
+# ============================================================
+if ($Mode -eq "variant") {
+	Show-Variant
+}
+
+# ============================================================
+# MODE: full
+# ============================================================
+elseif ($Mode -eq "full") {
+	Show-Overview
+	$lines.Add(""); $lines.Add("--- query ---"); $lines.Add("")
+	Show-Query
+	$lines.Add(""); $lines.Add("--- fields ---"); $lines.Add("")
+	Show-Fields
+	$lines.Add(""); $lines.Add("--- resources ---"); $lines.Add("")
+	Show-Resources
+	$lines.Add(""); $lines.Add("--- params ---"); $lines.Add("")
+	Show-Params
+	$lines.Add(""); $lines.Add("--- variant ---"); $lines.Add("")
+	Show-Variant
 }
 
 # ============================================================

@@ -21,7 +21,7 @@ allowed-tools:
 | `OutputDir` | Корневая директория выгрузки конфигурации (где `Catalogs/`, `Documents/` и т.д.) |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\meta-compile\scripts\meta-compile.ps1 -JsonPath "<json>" -OutputDir "<ConfigDir>"
+powershell.exe -NoProfile -File .claude/skills/meta-compile/scripts/meta-compile.ps1 -JsonPath "<json>" -OutputDir "<ConfigDir>"
 ```
 
 `OutputDir` — директория, содержащая подпапки типов (`Catalogs/`, `Documents/`, ...) и `Configuration.xml`.

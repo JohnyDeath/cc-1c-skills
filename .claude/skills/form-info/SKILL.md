@@ -29,12 +29,12 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\form-info\scripts\form-info.ps1 -FormPath "<путь к Form.xml>"
+powershell.exe -NoProfile -File .claude/skills/form-info/scripts/form-info.ps1 -FormPath "<путь к Form.xml>"
 ```
 
 С пагинацией:
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\form-info\scripts\form-info.ps1 -FormPath "<путь>" -Offset 150
+powershell.exe -NoProfile -File .claude/skills/form-info/scripts/form-info.ps1 -FormPath "<путь>" -Offset 150
 ```
 
 ## Чтение вывода

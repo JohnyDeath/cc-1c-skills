@@ -21,7 +21,7 @@ allowed-tools:
 | `OutFile` | Записать результат в файл |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\skd-validate\scripts\skd-validate.ps1 -TemplatePath "<путь>"
+powershell.exe -NoProfile -File .claude/skills/skd-validate/scripts/skd-validate.ps1 -TemplatePath "<путь>"
 ```
 
 ## Проверки (~30)

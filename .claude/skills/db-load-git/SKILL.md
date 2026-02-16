@@ -38,7 +38,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 <параметры>
+powershell.exe -NoProfile -File .claude/skills/db-load-git/scripts/db-load-git.ps1 <параметры>
 ```
 
 ### Параметры скрипта
@@ -94,17 +94,17 @@ powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.p
 
 ```powershell
 # Загрузить все незафиксированные изменения (файловая база)
-powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -V8Path "C:\Program Files\1cv8\8.3.25.1257\bin" -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source All
+powershell.exe -NoProfile -File .claude/skills/db-load-git/scripts/db-load-git.ps1 -V8Path "C:\Program Files\1cv8\8.3.25.1257\bin" -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source All
 
 # Только staged
-powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source Staged
+powershell.exe -NoProfile -File .claude/skills/db-load-git/scripts/db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source Staged
 
 # Серверная база
-powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Dev" -UserName "Admin" -Password "secret" -ConfigDir "C:\WS\cfsrc" -Source All
+powershell.exe -NoProfile -File .claude/skills/db-load-git/scripts/db-load-git.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Dev" -UserName "Admin" -Password "secret" -ConfigDir "C:\WS\cfsrc" -Source All
 
 # Из диапазона коммитов
-powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source Commit -CommitRange "HEAD~3..HEAD"
+powershell.exe -NoProfile -File .claude/skills/db-load-git/scripts/db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -ConfigDir "C:\WS\cfsrc" -Source Commit -CommitRange "HEAD~3..HEAD"
 
 # Только посмотреть (DryRun)
-powershell.exe -NoProfile -File .claude\skills\db-load-git\scripts\db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -ConfigDir "C:\WS\cfsrc" -DryRun
+powershell.exe -NoProfile -File .claude/skills/db-load-git/scripts/db-load-git.ps1 -InfoBasePath "C:\Bases\MyDB" -ConfigDir "C:\WS\cfsrc" -DryRun
 ```

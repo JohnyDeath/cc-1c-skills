@@ -34,22 +34,25 @@ allowed-tools:
 
 ## Команда
 
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /F "<база>" /N"<user>" /P"<pwd>" /DumpCfg "<файл.cf>" /DisableStartupDialogs /Out "<лог>"
+```powershell
+powershell.exe -NoProfile -File .claude/skills/db-dump-cf/scripts/db-dump-cf.ps1 <параметры>
 ```
 
-Для серверной базы вместо `/F` используй `/S`:
-```cmd
-"<v8path>\1cv8.exe" DESIGNER /S "<server>/<ref>" /N"<user>" /P"<pwd>" /DumpCfg "<файл.cf>" /DisableStartupDialogs /Out "<лог>"
-```
+### Параметры скрипта
 
-### Параметры
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `-V8Path <путь>` | нет | Каталог bin платформы (или полный путь к 1cv8.exe) |
+| `-InfoBasePath <путь>` | * | Файловая база |
+| `-InfoBaseServer <сервер>` | * | Сервер 1С (для серверной базы) |
+| `-InfoBaseRef <имя>` | * | Имя базы на сервере |
+| `-UserName <имя>` | нет | Имя пользователя |
+| `-Password <пароль>` | нет | Пароль |
+| `-OutputFile <путь>` | да | Путь к выходному CF-файлу |
+| `-Extension <имя>` | нет | Выгрузить расширение |
+| `-AllExtensions` | нет | Выгрузить все расширения |
 
-| Параметр | Описание |
-|----------|----------|
-| `/DumpCfg <файл>` | Путь к выходному CF-файлу |
-| `-Extension <имя>` | Выгрузить расширение (вместо основной конфигурации) |
-| `-AllExtensions` | Выгрузить все расширения (архив расширений) |
+> `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
 
 ## Коды возврата
 
@@ -62,10 +65,15 @@ allowed-tools:
 
 Прочитай лог-файл и покажи результат. Если есть ошибки — покажи содержимое лога.
 
-## Пример
+## Примеры
 
 ```powershell
-$v8 = Get-ChildItem "C:\Program Files\1cv8\*\bin\1cv8.exe" | Sort-Object -Descending | Select-Object -First 1
+# Выгрузка конфигурации (файловая база)
+powershell.exe -NoProfile -File .claude/skills/db-dump-cf/scripts/db-dump-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -OutputFile "C:\backup\config.cf"
 
-& $v8.FullName DESIGNER /F "C:\Bases\MyDB" /N"Admin" /P"" /DumpCfg "C:\backup\config.cf" /DisableStartupDialogs /Out "dump.log"
+# Серверная база
+powershell.exe -NoProfile -File .claude/skills/db-dump-cf/scripts/db-dump-cf.ps1 -InfoBaseServer "srv01" -InfoBaseRef "MyApp_Dev" -UserName "Admin" -Password "secret" -OutputFile "config.cf"
+
+# Выгрузка расширения
+powershell.exe -NoProfile -File .claude/skills/db-dump-cf/scripts/db-dump-cf.ps1 -InfoBasePath "C:\Bases\MyDB" -UserName "Admin" -OutputFile "ext.cfe" -Extension "МоёРасширение"
 ```

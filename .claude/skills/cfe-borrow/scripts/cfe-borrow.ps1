@@ -102,6 +102,27 @@ $childTypeDirMap = @{
 	"CommonAttribute"="CommonAttributes"; "Style"="Styles"
 }
 
+# --- 4b. Russian synonym → English type ---
+$synonymMap = @{
+	"Справочник"="Catalog"; "Документ"="Document"; "Перечисление"="Enum"
+	"ОбщийМодуль"="CommonModule"; "ОбщаяКартинка"="CommonPicture"
+	"ОбщаяКоманда"="CommonCommand"; "ОбщийМакет"="CommonTemplate"
+	"ПланОбмена"="ExchangePlan"; "Отчет"="Report"; "Отчёт"="Report"
+	"Обработка"="DataProcessor"; "РегистрСведений"="InformationRegister"
+	"РегистрНакопления"="AccumulationRegister"
+	"ПланВидовХарактеристик"="ChartOfCharacteristicTypes"
+	"ПланСчетов"="ChartOfAccounts"; "РегистрБухгалтерии"="AccountingRegister"
+	"ПланВидовРасчета"="ChartOfCalculationTypes"; "РегистрРасчета"="CalculationRegister"
+	"БизнесПроцесс"="BusinessProcess"; "Задача"="Task"
+	"Подсистема"="Subsystem"; "Роль"="Role"; "Константа"="Constant"
+	"ФункциональнаяОпция"="FunctionalOption"; "ОпределяемыйТип"="DefinedType"
+	"ОбщаяФорма"="CommonForm"; "ЖурналДокументов"="DocumentJournal"
+	"ПараметрСеанса"="SessionParameter"; "ГруппаКоманд"="CommandGroup"
+	"ПодпискаНаСобытие"="EventSubscription"; "РегламентноеЗадание"="ScheduledJob"
+	"ОбщийРеквизит"="CommonAttribute"; "ПакетXDTO"="XDTOPackage"
+	"HTTPСервис"="HTTPService"; "СервисИнтеграции"="IntegrationService"
+}
+
 # --- 5. Canonical type order (44 types) ---
 $script:typeOrder = @(
 	"Language","Subsystem","StyleItem","Style",
@@ -518,6 +539,9 @@ foreach ($item in $items) {
 	}
 	$typeName = $item.Substring(0, $dotIdx)
 	$objName = $item.Substring($dotIdx + 1)
+
+	# Resolve Russian synonym to English type name
+	if ($synonymMap.ContainsKey($typeName)) { $typeName = $synonymMap[$typeName] }
 
 	if (-not $childTypeDirMap.ContainsKey($typeName)) {
 		Write-Error "Unknown type '${typeName}'"

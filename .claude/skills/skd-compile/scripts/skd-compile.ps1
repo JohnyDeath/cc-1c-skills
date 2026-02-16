@@ -1,9 +1,8 @@
 ﻿# skd-compile v1.0 — Compile 1C DCS from JSON
 # Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 param(
-	[Parameter(Mandatory)]
-	[string]$JsonPath,
-
+	[string]$DefinitionFile,
+	[string]$Value,
 	[Parameter(Mandatory)]
 	[string]$OutputPath
 )
@@ -13,12 +12,28 @@ $ErrorActionPreference = "Stop"
 
 # --- 1. Load and validate JSON ---
 
-if (-not (Test-Path $JsonPath)) {
-	Write-Error "File not found: $JsonPath"
+if ($DefinitionFile -and $Value) {
+	Write-Error "Cannot use both -DefinitionFile and -Value"
+	exit 1
+}
+if (-not $DefinitionFile -and -not $Value) {
+	Write-Error "Either -DefinitionFile or -Value is required"
 	exit 1
 }
 
-$json = Get-Content -Raw -Encoding UTF8 $JsonPath
+if ($DefinitionFile) {
+	if (-not [System.IO.Path]::IsPathRooted($DefinitionFile)) {
+		$DefinitionFile = Join-Path (Get-Location).Path $DefinitionFile
+	}
+	if (-not (Test-Path $DefinitionFile)) {
+		Write-Error "Definition file not found: $DefinitionFile"
+		exit 1
+	}
+	$json = Get-Content -Raw -Encoding UTF8 $DefinitionFile
+} else {
+	$json = $Value
+}
+
 $def = $json | ConvertFrom-Json
 
 if (-not $def.dataSets -or $def.dataSets.Count -eq 0) {

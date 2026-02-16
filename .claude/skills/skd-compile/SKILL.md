@@ -1,7 +1,7 @@
 ---
 name: skd-compile
 description: Компиляция схемы компоновки данных 1С (СКД) из компактного JSON-определения. Используй когда нужно создать СКД с нуля
-argument-hint: <JsonPath> <OutputPath>
+argument-hint: [-DefinitionFile <json> | -Value <json-string>] -OutputPath <Template.xml>
 allowed-tools:
   - Bash
   - Read
@@ -17,11 +17,16 @@ allowed-tools:
 
 | Параметр | Описание |
 |----------|----------|
-| `JsonPath` | Путь к JSON-определению СКД |
+| `DefinitionFile` | Путь к JSON-файлу с определением СКД (взаимоисключающий с Value) |
+| `Value` | JSON-строка с определением СКД (взаимоисключающий с DefinitionFile) |
 | `OutputPath` | Путь к выходному Template.xml |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\skd-compile\scripts\skd-compile.ps1 -JsonPath "<json>" -OutputPath "<Template.xml>"
+# Из файла
+powershell.exe -NoProfile -File .claude/skills/skd-compile/scripts/skd-compile.ps1 -DefinitionFile "<json>" -OutputPath "<Template.xml>"
+
+# Из строки (без промежуточного файла)
+powershell.exe -NoProfile -File .claude/skills/skd-compile/scripts/skd-compile.ps1 -Value '<json-string>' -OutputPath "<Template.xml>"
 ```
 
 ## JSON DSL — краткий справочник

@@ -21,7 +21,7 @@ allowed-tools:
 | `OutFile` | Записать результат в файл (UTF-8 BOM) |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\cf-validate\scripts\cf-validate.ps1 -ConfigPath "<путь>"
+powershell.exe -NoProfile -File .claude/skills/cf-validate/scripts/cf-validate.ps1 -ConfigPath "<путь>"
 ```
 
 ## Выполняемые проверки

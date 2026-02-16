@@ -28,7 +28,7 @@ allowed-tools:
 ## Команда
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\form-validate\scripts\form-validate.ps1 -FormPath "<путь>"
+powershell.exe -NoProfile -File .claude/skills/form-validate/scripts/form-validate.ps1 -FormPath "<путь>"
 ```
 
 ## Выполняемые проверки

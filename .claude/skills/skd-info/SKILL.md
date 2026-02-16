@@ -1,7 +1,7 @@
 ---
 name: skd-info
 description: Анализ структуры схемы компоновки данных 1С (СКД) — наборы, поля, параметры, варианты. Используй для понимания отчёта — источник данных (запрос), доступные поля, параметры
-argument-hint: <TemplatePath> [-Mode overview|query|fields|links|calculated|resources|params|variant|templates|trace] [-Name <dataset|variant|field|group>]
+argument-hint: <TemplatePath> [-Mode overview|query|fields|links|calculated|resources|params|variant|templates|trace|full] [-Name <dataset|variant|field|group>]
 allowed-tools:
   - Bash
   - Read
@@ -24,7 +24,7 @@ allowed-tools:
 | `OutFile` | Записать результат в файл (UTF-8 BOM) |
 
 ```powershell
-powershell.exe -NoProfile -File .claude\skills\skd-info\scripts\skd-info.ps1 -TemplatePath "<путь>"
+powershell.exe -NoProfile -File .claude/skills/skd-info/scripts/skd-info.ps1 -TemplatePath "<путь>"
 ```
 
 С указанием режима:
@@ -54,8 +54,9 @@ powershell.exe -NoProfile -File .claude\skills\skd-info\scripts\skd-info.ps1 -Te
 | `variant` | Список вариантов | Структура группировок + фильтры + вывод |
 | `templates` | Карта привязок шаблонов (field/group) | Содержимое шаблона: строки, ячейки, выражения |
 | `trace` | — | Полная цепочка: набор → вычисление → ресурс |
+| `full` | Полная сводка: overview + query + fields + resources + params + variant | — |
 
-Паттерн: без `-Name` — карта/индекс, с `-Name` — деталь конкретного элемента.
+Паттерн: без `-Name` — карта/индекс, с `-Name` — деталь конкретного элемента. Режим `full` объединяет 6 ключевых режимов в один вызов.
 
 ## Типичный workflow
 
