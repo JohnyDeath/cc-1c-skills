@@ -402,8 +402,11 @@ if ($Mode -eq "tree") {
 	if (Test-Path $SubsystemPath -PathType Container) {
 		$dirName = Split-Path $SubsystemPath -Leaf
 		$candidate = Join-Path $SubsystemPath "$dirName.xml"
+		$sibling = Join-Path (Split-Path $SubsystemPath) "$dirName.xml"
 		if (Test-Path $candidate) {
 			$SubsystemPath = $candidate
+		} elseif (Test-Path $sibling) {
+			$SubsystemPath = $sibling
 		} else {
 			Write-Host "[ERROR] No $dirName.xml found in directory. Use -Mode tree for directory listing."
 			exit 1

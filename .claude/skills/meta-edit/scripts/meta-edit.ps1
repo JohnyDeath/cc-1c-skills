@@ -58,10 +58,13 @@ if ($DefinitionFile) {
 if (Test-Path $ObjectPath -PathType Container) {
 	$dirName = Split-Path $ObjectPath -Leaf
 	$candidate = Join-Path $ObjectPath "$dirName.xml"
+	$sibling = Join-Path (Split-Path $ObjectPath) "$dirName.xml"
 	if (Test-Path $candidate) {
 		$ObjectPath = $candidate
+	} elseif (Test-Path $sibling) {
+		$ObjectPath = $sibling
 	} else {
-		Write-Error "Directory given but no $dirName.xml found inside"
+		Write-Error "Directory given but no $dirName.xml found inside or as sibling"
 		exit 1
 	}
 }
