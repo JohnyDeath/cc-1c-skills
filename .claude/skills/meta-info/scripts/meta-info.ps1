@@ -42,6 +42,16 @@ if (Test-Path $ObjectPath -PathType Container) {
 	}
 }
 
+# File not found — check Dir/Name/Name.xml → Dir/Name.xml (common LLM mistake)
+if (-not (Test-Path $ObjectPath)) {
+	$fileName = [System.IO.Path]::GetFileNameWithoutExtension($ObjectPath)
+	$parentDir = Split-Path $ObjectPath
+	$parentDirName = Split-Path $parentDir -Leaf
+	if ($fileName -eq $parentDirName) {
+		$candidate = Join-Path (Split-Path $parentDir) "$fileName.xml"
+		if (Test-Path $candidate) { $ObjectPath = $candidate }
+	}
+}
 if (-not (Test-Path $ObjectPath)) {
 	Write-Host "[ERROR] File not found: $ObjectPath"
 	exit 1

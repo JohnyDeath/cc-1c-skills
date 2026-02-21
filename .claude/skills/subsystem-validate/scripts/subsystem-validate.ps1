@@ -24,6 +24,15 @@ if (Test-Path $SubsystemPath -PathType Container) {
 		exit 1
 	}
 }
+# File not found — check Dir/Name/Name.xml → Dir/Name.xml
+if (-not (Test-Path $SubsystemPath)) {
+	$fn = [System.IO.Path]::GetFileNameWithoutExtension($SubsystemPath)
+	$pd = Split-Path $SubsystemPath
+	if ($fn -eq (Split-Path $pd -Leaf)) {
+		$c = Join-Path (Split-Path $pd) "$fn.xml"
+		if (Test-Path $c) { $SubsystemPath = $c }
+	}
+}
 if (-not (Test-Path $SubsystemPath)) {
 	Write-Host "[ERROR] File not found: $SubsystemPath"
 	exit 1
