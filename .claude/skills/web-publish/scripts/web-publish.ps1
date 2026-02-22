@@ -230,6 +230,9 @@ $vrdContent = @"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        base="/$AppName"
        ib="$ibString">
+    <ws publishByDefault="true"/>
+    <httpServices publishByDefault="true"/>
+    <standardOdata enable="true"/>
 </point>
 "@
 
@@ -364,4 +367,7 @@ if ($httpdCheck) {
 # --- Result ---
 Write-Host ""
 Write-Host "=== Публикация готова ===" -ForegroundColor Green
-Write-Host "URL: http://localhost:$Port/$AppName" -ForegroundColor Cyan
+Write-Host "URL:          http://localhost:$Port/$AppName" -ForegroundColor Cyan
+Write-Host "OData:        http://localhost:$Port/$AppName/odata/standard.odata" -ForegroundColor Cyan
+Write-Host "HTTP-сервисы: http://localhost:$Port/$AppName/hs/<RootUrl>/..." -ForegroundColor Cyan
+Write-Host "Web-сервисы:  http://localhost:$Port/$AppName/ws/<Имя>?wsdl" -ForegroundColor Cyan

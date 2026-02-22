@@ -43,6 +43,20 @@ File=&quot;C:\Bases\MyDB&quot;;Usr=&quot;Admin&quot;;Pwd=&quot;123&quot;;
 
 > Кавычки внутри значения `ib` экранируются как `&quot;` (XML-сущность).
 
+### Дочерние элементы
+
+#### `<ws>`
+Публикация SOAP web-сервисов. `publishByDefault="true"` публикует все сервисы из конфигурации.
+URL: `/{AppName}/ws/{WebServiceName}?wsdl`
+
+#### `<httpServices>`
+Публикация HTTP-сервисов. `publishByDefault="true"` публикует все сервисы из конфигурации.
+URL: `/{AppName}/hs/{RootUrl}/...`
+
+#### `<standardOdata>`
+Стандартный OData-интерфейс платформы. `enable="true"` открывает REST-доступ ко всем объектам.
+URL: `/{AppName}/odata/standard.odata`
+
 ### Расположение
 
 `{ApachePath}/publish/{AppName}/default.vrd`

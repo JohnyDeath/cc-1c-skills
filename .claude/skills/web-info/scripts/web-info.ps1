@@ -112,10 +112,20 @@ if ($pubMatches.Count -eq 0) {
             }
         }
 
+        # Detect published services
+        $svcTags = @()
+        if (Test-Path $vrdPath) {
+            if ($vrdContent -match '<ws\s') { $svcTags += "WS" }
+            if ($vrdContent -match '<httpServices\s') { $svcTags += "HTTP" }
+            if ($vrdContent -match '<standardOdata\s') { $svcTags += "OData" }
+        }
+        $svcLabel = if ($svcTags.Count -gt 0) { "   [" + ($svcTags -join " ") + "]" } else { "" }
+
         $url = "http://localhost:$port/$appName"
         Write-Host "  $appName" -ForegroundColor White -NoNewline
         Write-Host "   $url" -ForegroundColor Gray -NoNewline
-        Write-Host "   $ibInfo" -ForegroundColor DarkGray
+        Write-Host "   $ibInfo" -ForegroundColor DarkGray -NoNewline
+        Write-Host $svcLabel -ForegroundColor DarkCyan
     }
 }
 

@@ -75,9 +75,14 @@ powershell.exe -NoProfile -File .claude/skills/web-publish/scripts/web-publish.p
 
 ## После выполнения
 
-1. Сообщи URL: `http://localhost:{Port}/{AppName}`
+1. Сообщи URL-ы:
+   - Веб-клиент: `http://localhost:{Port}/{AppName}`
+   - OData: `http://localhost:{Port}/{AppName}/odata/standard.odata`
+   - HTTP-сервисы: `http://localhost:{Port}/{AppName}/hs/<RootUrl>/...`
+   - Web-сервисы: `http://localhost:{Port}/{AppName}/ws/<Имя>?wsdl`
 2. Предложи открыть в браузере
-3. Если база не зарегистрирована — предложи `/db-list add`
+3. Если нужно протестировать сервис — помоги составить запрос
+4. Если база не зарегистрирована — предложи `/db-list add`
 
 ## Примеры
 

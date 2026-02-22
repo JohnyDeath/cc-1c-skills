@@ -122,6 +122,29 @@ Claude вызовет `/web-unpublish bpdemo` → удалит блок из htt
 
 Claude вызовет `/web-unpublish --all` → удалит все блоки из httpd.conf → удалит все каталоги → остановит Apache.
 
+## Работа с сервисами
+
+### Протестировать HTTP-сервис
+```
+> Вызови HTTP-сервис ОбменДанными метод ПолучитьСтатус
+```
+
+Claude составит curl/Invoke-WebRequest к `http://localhost:8081/appname/hs/exchange/status`
+
+### Проверить OData
+```
+> Покажи список справочников через OData
+```
+
+Claude вызовет `http://localhost:8081/appname/odata/standard.odata/$metadata`
+
+### Получить WSDL web-сервиса
+```
+> Покажи WSDL сервиса ОбменСВнешнимиСистемами
+```
+
+Claude откроет `http://localhost:8081/appname/ws/ExchangeWithExternalSystems?wsdl`
+
 ## Ручная установка Apache
 
 Если автоматическая загрузка невозможна (прокси, firewall), используйте флаг `--manual`:
