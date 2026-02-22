@@ -41,11 +41,11 @@ powershell.exe -NoProfile -File .claude/skills/web-info/scripts/web-info.ps1 <п
 === Apache Web Server ===
 Status: Запущен (PID: 12345)
 Path:   C:\...\tools\apache24
-Port:   8080
+Port:   8081
 Module: C:/Program Files/1cv8/8.3.24.1691/bin/wsap24.dll
 
 === Опубликованные базы ===
-  mydb   http://localhost:8080/mydb   File="C:\Bases\MyDB";
+  mydb   http://localhost:8081/mydb   File="C:\Bases\MyDB";
 
 === Последние ошибки ===
 (пусто)

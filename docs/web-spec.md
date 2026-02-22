@@ -63,10 +63,10 @@ LoadModule _1cws_module "C:/Program Files/1cv8/8.3.24.1691/bin/wsap24.dll"
 ### Listen
 
 ```apache
-Listen 8080
+Listen 8081
 ```
 
-Порт для веб-клиента. По умолчанию `8080` (стандартный `80` может быть занят).
+Порт для веб-клиента. По умолчанию `8081` (стандартный `80` может быть занят).
 
 ### Alias + Directory
 
@@ -92,7 +92,7 @@ Alias "/appname" "C:/path/to/apache/publish/appname"
 
 ```apache
 # --- 1C: global ---
-Listen 8080
+Listen 8081
 LoadModule _1cws_module "C:/Program Files/1cv8/8.3.24.1691/bin/wsap24.dll"
 # --- End: global ---
 

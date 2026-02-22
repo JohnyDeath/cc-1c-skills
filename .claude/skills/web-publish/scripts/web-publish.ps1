@@ -76,7 +76,7 @@ param(
     [string]$ApachePath,
 
     [Parameter(Mandatory=$false)]
-    [int]$Port = 8080,
+    [int]$Port = 8081,
 
     [Parameter(Mandatory=$false)]
     [switch]$Manual

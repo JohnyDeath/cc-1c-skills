@@ -51,7 +51,7 @@ powershell.exe -NoProfile -File .claude/skills/web-publish/scripts/web-publish.p
 | `-Password <пароль>` | нет | Пароль |
 | `-AppName <имя>` | нет | Имя публикации (по умолчанию из имени каталога базы) |
 | `-ApachePath <путь>` | нет | Корень Apache (по умолчанию `tools/apache24`) |
-| `-Port <порт>` | нет | Порт (по умолчанию `8080`) |
+| `-Port <порт>` | нет | Порт (по умолчанию `8081`) |
 | `-Manual` | нет | Не скачивать — только проверить и дать инструкцию |
 
 > `*` — нужен либо `-InfoBasePath`, либо пара `-InfoBaseServer` + `-InfoBaseRef`
