@@ -126,23 +126,25 @@ if (-not (Test-Path $httpdExe)) {
         Write-Host "Apache не найден: $ApachePath" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "Установите Apache вручную:" -ForegroundColor Cyan
-        Write-Host "  1. Скачайте Apache Lounge (x64 VS17) с https://www.apachelounge.com/download/"
+        Write-Host "  1. Скачайте Apache Lounge (x64) с https://www.apachelounge.com/download/"
         Write-Host "  2. Распакуйте содержимое Apache24\ в: $ApachePath"
         Write-Host "  3. Запустите скрипт повторно"
         exit 1
     }
 
     Write-Host "Apache не найден. Скачиваю..." -ForegroundColor Cyan
-    $zipUrl = "https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-240904-win64-VS17.zip"
+    $zipUrl = "https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.66-260131-Win64-VS18.zip"
     $tmpZip = Join-Path $env:TEMP "apache24.zip"
     $tmpDir = Join-Path $env:TEMP "apache24_extract"
 
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $zipUrl -OutFile $tmpZip -UseBasicParsing
+        # WebClient works better than Invoke-WebRequest in PS 5.1 (handles redirects)
+        $wc = New-Object System.Net.WebClient
+        $wc.DownloadFile($zipUrl, $tmpZip)
     } catch {
         Write-Host "Error: не удалось скачать Apache: $_" -ForegroundColor Red
-        Write-Host "Скачайте вручную: $zipUrl" -ForegroundColor Yellow
+        Write-Host "Скачайте вручную: https://www.apachelounge.com/download/" -ForegroundColor Yellow
         exit 1
     }
 
@@ -263,6 +265,8 @@ if ($confContent -match [regex]::Escape($globalMarkerStart)) {
     $pattern = [regex]::Escape($globalMarkerStart) + '[\s\S]*?' + [regex]::Escape($globalMarkerEnd)
     $confContent = [regex]::Replace($confContent, $pattern, $globalBlock)
 } else {
+    # Comment out default Listen to avoid port conflict
+    $confContent = $confContent -replace '(?m)^(Listen\s+\d+)', '#$1  # commented by web-publish'
     # Append global block
     $confContent = $confContent.TrimEnd() + "`n`n" + $globalBlock + "`n"
 }
