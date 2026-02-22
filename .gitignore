@@ -13,5 +13,8 @@ test-tmp/
 # Локальные настройки Claude Code
 .claude/settings.local.json
 
+# Инструменты (portable Apache и т.д.)
+tools/
+
 # Локальный реестр баз данных 1С
 .v8-project.json
