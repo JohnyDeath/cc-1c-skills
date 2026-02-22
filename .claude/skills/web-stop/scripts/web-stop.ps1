@@ -70,6 +70,7 @@ while ($elapsed -lt $maxWait) {
     $check = Get-OurHttpd
     if (-not $check) {
         Write-Host "Apache остановлен" -ForegroundColor Green
+        Write-Host "Публикации сохранены. Для удаления: /web-unpublish <имя> или /web-unpublish --all" -ForegroundColor Gray
         exit 0
     }
 }
@@ -88,3 +89,4 @@ if ($remaining) {
 }
 
 Write-Host "Apache остановлен" -ForegroundColor Green
+Write-Host "Публикации сохранены. Для удаления: /web-unpublish <имя> или /web-unpublish --all" -ForegroundColor Gray

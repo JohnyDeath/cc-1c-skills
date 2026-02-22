@@ -1,7 +1,7 @@
 ---
 name: web-unpublish
-description: Удаление веб-публикации 1С. Используй когда пользователь просит убрать публикацию, удалить веб-доступ к базе
-argument-hint: "<appname>"
+description: Удаление веб-публикации 1С из Apache. Используй когда пользователь просит убрать публикацию, удалить веб-доступ к базе
+argument-hint: "<appname | --all>"
 allowed-tools:
   - Bash
   - Read
@@ -9,15 +9,18 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# /web-unpublish — Удаление публикации 1С
+# /web-unpublish — Удаление веб-публикации 1С из Apache
 
-Удаляет публикацию из httpd.conf и каталог `publish/{appname}`. Если других публикаций не осталось — удаляет глобальный блок 1C и останавливает Apache.
+Удаляет блок публикации из `httpd.conf` и каталог `publish/{appname}` внутри Apache. Если других публикаций не осталось — удаляет глобальный блок 1C и останавливает Apache. С флагом `--all` удаляет все публикации разом.
+
+> **Внимание:** этот навык управляет только веб-публикациями в Apache (блоки в `httpd.conf` + каталог `publish/`). Он **НЕ** удаляет каталоги проекта, `upload/`, базы данных или исходники.
 
 ## Usage
 
 ```
 /web-unpublish <appname>
 /web-unpublish bpdemo
+/web-unpublish --all
 ```
 
 ## Параметры подключения
@@ -25,7 +28,9 @@ allowed-tools:
 Прочитай `.v8-project.json` из корня проекта. Если задан `webPath` — используй как `-ApachePath`.
 По умолчанию `tools/apache24` от корня проекта.
 
-Если пользователь не указал `appname`, выполни `/web-info` чтобы показать список публикаций и спроси какую удалить.
+Если пользователь не указал `appname` и не указал `--all`, выполни `/web-info` чтобы показать список публикаций и спроси какую удалить.
+
+Если пользователь просит удалить **все** публикации — используй `-All`.
 
 ## Команда
 
@@ -37,14 +42,20 @@ powershell.exe -NoProfile -File .claude/skills/web-unpublish/scripts/web-unpubli
 
 | Параметр | Обязательный | Описание |
 |----------|:------------:|----------|
-| `-AppName <имя>` | да | Имя публикации |
+| `-AppName <имя>` | * | Имя публикации |
+| `-All` | * | Удалить все публикации |
 | `-ApachePath <путь>` | нет | Корень Apache (по умолчанию `tools/apache24`) |
+
+> `*` — нужен либо `-AppName`, либо `-All`
 
 ## Примеры
 
 ```powershell
-# Удалить публикацию
+# Удалить одну публикацию
 powershell.exe -NoProfile -File .claude/skills/web-unpublish/scripts/web-unpublish.ps1 -AppName "bpdemo"
+
+# Удалить все публикации
+powershell.exe -NoProfile -File .claude/skills/web-unpublish/scripts/web-unpublish.ps1 -All
 
 # С указанием пути
 powershell.exe -NoProfile -File .claude/skills/web-unpublish/scripts/web-unpublish.ps1 -AppName "mydb" -ApachePath "C:\tools\apache24"
