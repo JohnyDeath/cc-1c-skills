@@ -229,10 +229,10 @@ $vrdContent = @"
        xmlns:xs="http://www.w3.org/2001/XMLSchema"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        base="/$AppName"
-       ib="$ibString">
-    <ws publishByDefault="true"/>
+       ib="$ibString"
+       enableStandardOdata="true">
+    <ws pointEnableCommon="true"/>
     <httpServices publishByDefault="true"/>
-    <standardOdata enable="true"/>
 </point>
 "@
 

@@ -14,7 +14,10 @@
        xmlns:xs="http://www.w3.org/2001/XMLSchema"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        base="/appname"
-       ib="connection-string">
+       ib="connection-string"
+       enableStandardOdata="true">
+    <ws pointEnableCommon="true"/>
+    <httpServices publishByDefault="true"/>
 </point>
 ```
 
@@ -45,17 +48,17 @@ File=&quot;C:\Bases\MyDB&quot;;Usr=&quot;Admin&quot;;Pwd=&quot;123&quot;;
 
 ### Дочерние элементы
 
+#### `enableStandardOdata` (атрибут `<point>`)
+Стандартный OData-интерфейс платформы. `enableStandardOdata="true"` открывает REST-доступ ко всем объектам.
+URL: `/{AppName}/odata/standard.odata`
+
 #### `<ws>`
-Публикация SOAP web-сервисов. `publishByDefault="true"` публикует все сервисы из конфигурации.
+Публикация SOAP web-сервисов. `pointEnableCommon="true"` публикует все сервисы из конфигурации.
 URL: `/{AppName}/ws/{WebServiceName}?wsdl`
 
 #### `<httpServices>`
 Публикация HTTP-сервисов. `publishByDefault="true"` публикует все сервисы из конфигурации.
 URL: `/{AppName}/hs/{RootUrl}/...`
-
-#### `<standardOdata>`
-Стандартный OData-интерфейс платформы. `enable="true"` открывает REST-доступ ко всем объектам.
-URL: `/{AppName}/odata/standard.odata`
 
 ### Расположение
 

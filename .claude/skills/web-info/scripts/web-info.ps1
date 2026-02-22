@@ -117,7 +117,7 @@ if ($pubMatches.Count -eq 0) {
         if (Test-Path $vrdPath) {
             if ($vrdContent -match '<ws\s') { $svcTags += "WS" }
             if ($vrdContent -match '<httpServices\s') { $svcTags += "HTTP" }
-            if ($vrdContent -match '<standardOdata\s') { $svcTags += "OData" }
+            if ($vrdContent -match 'enableStandardOdata\s*=\s*"true"') { $svcTags += "OData" }
         }
         $svcLabel = if ($svcTags.Count -gt 0) { "   [" + ($svcTags -join " ") + "]" } else { "" }
 
