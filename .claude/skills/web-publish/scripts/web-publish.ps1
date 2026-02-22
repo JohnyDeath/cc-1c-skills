@@ -298,14 +298,43 @@ if ($confContent -match [regex]::Escape($pubMarkerStart)) {
 [System.IO.File]::WriteAllText($confFile, $confContent)
 Write-Host "httpd.conf обновлён" -ForegroundColor Green
 
+# --- Helper: filter httpd processes by our ApachePath ---
+function Get-OurHttpd {
+    $httpdExeNorm = (Resolve-Path $httpdExe -ErrorAction SilentlyContinue).Path
+    Get-Process httpd -ErrorAction SilentlyContinue | Where-Object {
+        try { $_.Path -eq $httpdExeNorm } catch { $false }
+    }
+}
+
+# --- Check port availability ---
+$portCheck = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($portCheck) {
+    $ourProc = Get-OurHttpd
+    if ($ourProc) {
+        # Our Apache holds the port — will restart
+    } else {
+        $holder = Get-Process -Id $portCheck.OwningProcess -ErrorAction SilentlyContinue
+        $holderName = if ($holder) { "$($holder.ProcessName) (PID: $($holder.Id))" } else { "PID $($portCheck.OwningProcess)" }
+        Write-Host "Error: порт $Port занят процессом $holderName" -ForegroundColor Red
+        Write-Host "Укажите другой порт: -Port 9090" -ForegroundColor Yellow
+        exit 1
+    }
+}
+
 # --- Start Apache if not running ---
-$httpdProc = Get-Process httpd -ErrorAction SilentlyContinue
+$httpdProc = Get-OurHttpd
 if ($httpdProc) {
     Write-Host "Apache уже запущен (PID: $(($httpdProc | Select-Object -First 1).Id))" -ForegroundColor Yellow
     Write-Host "Перезапуск для применения конфигурации..."
-    # Portable Apache: stop + start
     $httpdProc | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
+} else {
+    # Check if a foreign httpd holds the port
+    $foreignHttpd = Get-Process httpd -ErrorAction SilentlyContinue
+    if ($foreignHttpd) {
+        Write-Host "[WARN] Обнаружен сторонний Apache (PID: $(($foreignHttpd | Select-Object -First 1).Id))" -ForegroundColor Yellow
+        Write-Host "       Наш Apache: $httpdExe" -ForegroundColor Yellow
+    }
 }
 
 Write-Host "Запуск Apache..."
@@ -313,11 +342,17 @@ Start-Process -FilePath $httpdExe -WorkingDirectory $ApachePath -WindowStyle Hid
 
 Start-Sleep -Seconds 2
 
-$httpdCheck = Get-Process httpd -ErrorAction SilentlyContinue
+$httpdCheck = Get-OurHttpd
 if ($httpdCheck) {
     Write-Host "Apache запущен (PID: $(($httpdCheck | Select-Object -First 1).Id))" -ForegroundColor Green
 } else {
     Write-Host "Apache не удалось запустить" -ForegroundColor Red
+    # Run config test for diagnostics
+    $testResult = & $httpdExe -t 2>&1
+    if ($testResult) {
+        Write-Host "--- httpd -t ---" -ForegroundColor Yellow
+        $testResult | ForEach-Object { Write-Host "  $_" }
+    }
     $errorLog = Join-Path (Join-Path $ApachePath "logs") "error.log"
     if (Test-Path $errorLog) {
         Write-Host "--- error.log (последние 10 строк) ---" -ForegroundColor Yellow

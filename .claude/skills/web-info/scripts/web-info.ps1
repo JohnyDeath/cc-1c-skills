@@ -46,13 +46,24 @@ if (-not (Test-Path $httpdExe)) {
     exit 0
 }
 
-# --- Check process ---
-$httpdProc = Get-Process httpd -ErrorAction SilentlyContinue
-if ($httpdProc) {
-    $pids = ($httpdProc | ForEach-Object { $_.Id }) -join ", "
+# --- Check process (only our Apache) ---
+$httpdExeNorm = (Resolve-Path $httpdExe -ErrorAction SilentlyContinue).Path
+$ourProc = Get-Process httpd -ErrorAction SilentlyContinue | Where-Object {
+    try { $_.Path -eq $httpdExeNorm } catch { $false }
+}
+$foreignProc = Get-Process httpd -ErrorAction SilentlyContinue | Where-Object {
+    try { $_.Path -ne $httpdExeNorm } catch { $true }
+}
+if ($ourProc) {
+    $pids = ($ourProc | ForEach-Object { $_.Id }) -join ", "
     Write-Host "Status: Запущен (PID: $pids)" -ForegroundColor Green
 } else {
     Write-Host "Status: Остановлен" -ForegroundColor Yellow
+}
+if ($foreignProc) {
+    $fpid = ($foreignProc | Select-Object -First 1).Id
+    $fpath = try { ($foreignProc | Select-Object -First 1).Path } catch { "?" }
+    Write-Host "[WARN] Обнаружен сторонний Apache (PID: $fpid, $fpath)" -ForegroundColor Yellow
 }
 
 Write-Host "Path:   $ApachePath"

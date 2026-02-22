@@ -33,17 +33,32 @@ if (-not $ApachePath) {
     $ApachePath = Join-Path $projectRoot "tools\apache24"
 }
 
-# --- Check process ---
-$httpdProc = Get-Process httpd -ErrorAction SilentlyContinue
+# --- Helper: filter httpd processes by our ApachePath ---
+$httpdExe = Join-Path (Join-Path $ApachePath "bin") "httpd.exe"
+$httpdExeNorm = (Resolve-Path $httpdExe -ErrorAction SilentlyContinue).Path
+function Get-OurHttpd {
+    Get-Process httpd -ErrorAction SilentlyContinue | Where-Object {
+        try { $_.Path -eq $httpdExeNorm } catch { $false }
+    }
+}
+
+# --- Check process (only our Apache) ---
+$httpdProc = Get-OurHttpd
 if (-not $httpdProc) {
-    Write-Host "Apache не запущен" -ForegroundColor Yellow
+    $foreign = Get-Process httpd -ErrorAction SilentlyContinue
+    if ($foreign) {
+        Write-Host "Наш Apache не запущен" -ForegroundColor Yellow
+        Write-Host "[WARN] Обнаружен сторонний Apache (PID: $(($foreign | Select-Object -First 1).Id))" -ForegroundColor Yellow
+    } else {
+        Write-Host "Apache не запущен" -ForegroundColor Yellow
+    }
     exit 0
 }
 
 $pids = ($httpdProc | ForEach-Object { $_.Id }) -join ", "
 Write-Host "Останавливаю Apache (PID: $pids)..."
 
-# --- Stop processes ---
+# --- Stop our processes ---
 $httpdProc | Stop-Process -Force -ErrorAction SilentlyContinue
 
 # --- Wait for shutdown ---
@@ -52,7 +67,7 @@ $elapsed = 0
 while ($elapsed -lt $maxWait) {
     Start-Sleep -Seconds 1
     $elapsed++
-    $check = Get-Process httpd -ErrorAction SilentlyContinue
+    $check = Get-OurHttpd
     if (-not $check) {
         Write-Host "Apache остановлен" -ForegroundColor Green
         exit 0
@@ -60,12 +75,12 @@ while ($elapsed -lt $maxWait) {
 }
 
 # --- Fallback: force kill ---
-$remaining = Get-Process httpd -ErrorAction SilentlyContinue
+$remaining = Get-OurHttpd
 if ($remaining) {
     Write-Host "Принудительная остановка..." -ForegroundColor Yellow
     $remaining | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
-    $final = Get-Process httpd -ErrorAction SilentlyContinue
+    $final = Get-OurHttpd
     if ($final) {
         Write-Host "Error: не удалось остановить Apache" -ForegroundColor Red
         exit 1

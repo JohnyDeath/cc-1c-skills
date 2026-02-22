@@ -81,11 +81,14 @@ if (Test-Path $publishDir) {
     Write-Host "Каталог не найден: $publishDir" -ForegroundColor Yellow
 }
 
-# --- Restart Apache if running ---
-$httpdProc = Get-Process httpd -ErrorAction SilentlyContinue
+# --- Restart Apache if running (only our instance) ---
+$httpdExe = Join-Path (Join-Path $ApachePath "bin") "httpd.exe"
+$httpdExeNorm = (Resolve-Path $httpdExe -ErrorAction SilentlyContinue).Path
+$httpdProc = Get-Process httpd -ErrorAction SilentlyContinue | Where-Object {
+    try { $_.Path -eq $httpdExeNorm } catch { $false }
+}
 if ($httpdProc) {
     Write-Host "Перезапуск Apache..."
-    $httpdExe = Join-Path (Join-Path $ApachePath "bin") "httpd.exe"
     $httpdProc | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
 
@@ -93,7 +96,9 @@ if ($httpdProc) {
     if ($remainingPubs.Count -gt 0) {
         Start-Process -FilePath $httpdExe -WorkingDirectory $ApachePath -WindowStyle Hidden
         Start-Sleep -Seconds 2
-        $check = Get-Process httpd -ErrorAction SilentlyContinue
+        $check = Get-Process httpd -ErrorAction SilentlyContinue | Where-Object {
+            try { $_.Path -eq $httpdExeNorm } catch { $false }
+        }
         if ($check) {
             Write-Host "Apache перезапущен" -ForegroundColor Green
         } else {
