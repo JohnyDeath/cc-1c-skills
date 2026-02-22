@@ -35,6 +35,12 @@ powershell.exe -NoProfile -File .claude/skills/web-stop/scripts/web-stop.ps1 <п
 |----------|:------------:|----------|
 | `-ApachePath <путь>` | нет | Корень Apache (по умолчанию `tools/apache24`) |
 
+## После выполнения
+
+Предложи пользователю:
+- **Перезапуск** — `/web-publish <база>` (повторный вызов поднимет Apache с существующими публикациями)
+- **Удаление публикаций** — `/web-unpublish <имя>` или `/web-unpublish --all`
+
 ## Примеры
 
 ```powershell
