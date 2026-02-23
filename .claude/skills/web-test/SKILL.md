@@ -53,7 +53,8 @@ allowed-tools:
 | `openCommand(name)` | Открыть команду (fuzzy) | `{ form, fields, buttons, tabs, ... }` |
 | `getFormState()` | Прочитать текущую форму | `{ form, activeTab, fields, buttons, tabs, texts, hyperlinks, table }` |
 | `readTable({maxRows, offset})` | Прочитать таблицу | `{ name, columns, rows, total, offset, shown }` |
-| `fillFields({field: value})` | Заполнить поля (fuzzy по имени/метке). Все значения вводятся через clipboard paste (trusted events). Ссылочные поля — автоподбор, обычные — paste + Tab. Поддерживает input, textarea, checkbox | `{ filled, form }` |
+| `fillFields({field: value})` | Заполнить поля шапки (fuzzy по имени/метке). Clipboard paste, ссылочные — автоподбор, checkbox | `{ filled, form }` |
+| `fillTableRow({field: value}, {tab?, add?})` | Заполнить ячейки строки ТЧ через Tab-навигацию. `add:true` — "Добавить" перед заполнением | `{ filled, notFilled?, form }` |
 | `clickElement(text)` | Кликнуть кнопку/ссылку/вкладку (fuzzy). Обрабатывает submenu | `{ form, clicked, submenu?, hint? }` |
 | `selectValue(field, search?)` | Выбрать из справочника (составная операция) | `{ form, selected, fields, ... }` |
 | `screenshot()` | Скриншот | `Buffer (PNG)` |
@@ -82,6 +83,31 @@ allowed-tools:
 ### Submenu
 
 Если `clickElement()` вернул `submenu[]` — вызови `clickElement()` ещё раз с именем пункта.
+
+### Заполнение табличной части
+
+`fillTableRow(fields, { tab, add })` — заполняет ячейки строки ТЧ через Tab-навигацию.
+
+```js
+// Добавить строку в "Товары" и заполнить
+const result = await browser.fillTableRow(
+  { 'Количество': '5', 'Цена': '200' },
+  { tab: 'Товары', add: true }
+);
+// result.filled: [{ field, cell, ok, method }]
+```
+
+**Как работает:**
+- `add: true` нажимает "Добавить" → 1С входит в edit mode на первой ячейке
+- Tab-цикл: читает focused input → fuzzy match имени → paste + commit → Tab → следующая
+- Fuzzy match: "Количество" → "ТоварыКоличество" (exact → suffix → includes)
+- Ссылочные поля: paste → EDD (autocomplete) → click match или selection form
+- После последнего нужного поля — остановка (без лишнего Tab, чтобы не создать пустую строку)
+
+**Ограничения:**
+- Только навигация вперёд (Tab). Пропущенные ранее поля недоступны
+- Порядок Tab определён конфигурацией формы 1С
+- Escape из пустой строки удаляет её
 
 ### Выбор из справочника
 
