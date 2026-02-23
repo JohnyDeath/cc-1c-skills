@@ -53,7 +53,7 @@ allowed-tools:
 | `openCommand(name)` | Открыть команду (fuzzy) | `{ form, fields, buttons, tabs, ... }` |
 | `getFormState()` | Прочитать текущую форму | `{ form, activeTab, fields, buttons, tabs, texts, hyperlinks, table }` |
 | `readTable({maxRows, offset})` | Прочитать таблицу | `{ name, columns, rows, total, offset, shown }` |
-| `fillFields({field: value})` | Заполнить поля (fuzzy по имени/метке). Поддерживает input, textarea, checkbox | `{ filled, form }` |
+| `fillFields({field: value})` | Заполнить поля (fuzzy по имени/метке). Поддерживает input, textarea, checkbox, ссылочные поля (type-ahead) | `{ filled, form }` |
 | `clickElement(text)` | Кликнуть кнопку/ссылку/вкладку (fuzzy). Обрабатывает submenu | `{ form, clicked, submenu?, hint? }` |
 | `selectValue(field, search?)` | Выбрать из справочника (составная операция) | `{ form, selected, fields, ... }` |
 | `screenshot()` | Скриншот | `Buffer (PNG)` |
@@ -142,6 +142,6 @@ try {
 - **disconnect() в finally** — ВСЕГДА! Иначе лицензия зависнет на 20 минут
 - **Fuzzy match** — все функции поиска по имени используют нечёткий поиск (exact → includes)
 - **Время загрузки** — 1С грузится 30–60 секунд при `connect()`
-- **Ссылочные поля** — не заполнять через `fillFields`, использовать `selectValue`
+- **Ссылочные поля** — `fillFields` автоматически определяет ссылочные поля (по наличию кнопки DLB) и использует type-ahead (ввод → Tab → авторезолв/popup/форма выбора). Для явного выбора через DLB-кнопку используй `selectValue`
 - **Чекбоксы** — заполнять через `fillFields({field: "true"})` или `fillFields({field: "да"})`
 - **Ошибки 1С** — если в ответе есть `errorModal`, значит 1С показала ошибку
