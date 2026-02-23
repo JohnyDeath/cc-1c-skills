@@ -53,7 +53,7 @@ allowed-tools:
 | `openCommand(name)` | Открыть команду (fuzzy) | `{ form, fields, buttons, tabs, ... }` |
 | `getFormState()` | Прочитать текущую форму | `{ form, activeTab, fields, buttons, tabs, texts, hyperlinks, table }` |
 | `readTable({maxRows, offset})` | Прочитать таблицу | `{ name, columns, rows, total, offset, shown }` |
-| `fillFields({field: value})` | Заполнить поля (fuzzy по имени/метке). Поддерживает input, textarea, checkbox, ссылочные поля (type-ahead) | `{ filled, form }` |
+| `fillFields({field: value})` | Заполнить поля (fuzzy по имени/метке). Все значения вводятся через clipboard paste (trusted events). Ссылочные поля — автоподбор, обычные — paste + Tab. Поддерживает input, textarea, checkbox | `{ filled, form }` |
 | `clickElement(text)` | Кликнуть кнопку/ссылку/вкладку (fuzzy). Обрабатывает submenu | `{ form, clicked, submenu?, hint? }` |
 | `selectValue(field, search?)` | Выбрать из справочника (составная операция) | `{ form, selected, fields, ... }` |
 | `screenshot()` | Скриншот | `Buffer (PNG)` |
@@ -85,12 +85,13 @@ allowed-tools:
 
 ### Выбор из справочника
 
-`selectValue("Организация", "Конфетпром")` — составная операция:
-1. Находит кнопку DLB у поля
-2. Открывает форму выбора
-3. Вводит текст в поиск
-4. Двойной клик по первой строке
-5. Возвращает обновлённую форму
+`selectValue("Организация", "Конфетпром")` — составная операция с тремя сценариями:
+
+**A) Dropdown-совпадение** — DLB → dropdown (EDD) → совпадение найдено → dispatchEvent click → готово
+**B) "Показать все"** — DLB → dropdown → совпадения нет, но есть "Показать все" → клик → форма выбора → поиск → выбор
+**C) F4 fallback** — DLB → dropdown → ни совпадения, ни "Показать все" → Escape → F4 → форма выбора → поиск → выбор
+
+В форме выбора: clipboard paste в поле поиска → Enter → ожидание грида → двойной клик по лучшему совпадению.
 
 Если не сработало — fallback через ручные шаги: `clickElement` → `getFormState` → `readTable`.
 
@@ -142,6 +143,7 @@ try {
 - **disconnect() в finally** — ВСЕГДА! Иначе лицензия зависнет на 20 минут
 - **Fuzzy match** — все функции поиска по имени используют нечёткий поиск (exact → includes)
 - **Время загрузки** — 1С грузится 30–60 секунд при `connect()`
-- **Ссылочные поля** — `fillFields` автоматически определяет ссылочные поля (по наличию кнопки DLB) и использует type-ahead (ввод → Tab → авторезолв/popup/форма выбора). Для явного выбора через DLB-кнопку используй `selectValue`
+- **Clipboard paste** — все поля (обычные и ссылочные) заполняются через clipboard paste (Ctrl+V) — `page.fill()` не вызывает 1С OnChange и зависимые поля не пересчитываются
+- **Ссылочные поля** — `fillFields` определяет ссылочные поля (по кнопке DLB) и использует type-ahead (paste → Tab → авторезолв/popup). Для явного выбора через DLB-кнопку используй `selectValue`
 - **Чекбоксы** — заполнять через `fillFields({field: "true"})` или `fillFields({field: "да"})`
 - **Ошибки 1С** — если в ответе есть `errorModal`, значит 1С показала ошибку
