@@ -947,6 +947,7 @@ def emit_properties(lines, props, indent):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     global _next_id
 
     parser = argparse.ArgumentParser(description='Compile 1C managed form from JSON', allow_abbrev=False)

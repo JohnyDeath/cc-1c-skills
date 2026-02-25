@@ -133,6 +133,7 @@ class Reporter:
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description='Validate 1C configuration extension XML structure (CFE)', allow_abbrev=False
     )

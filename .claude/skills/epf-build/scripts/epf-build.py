@@ -33,6 +33,7 @@ def resolve_v8path(v8path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description="Build external data processor or report (EPF/ERF) from XML sources",
         allow_abbrev=False,

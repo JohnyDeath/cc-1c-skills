@@ -31,6 +31,7 @@ def resolve_v8path(v8path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description="Create 1C information base",
         allow_abbrev=False,

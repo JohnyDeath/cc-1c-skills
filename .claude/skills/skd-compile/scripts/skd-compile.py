@@ -1317,6 +1317,7 @@ def emit_settings_variants(lines, defn):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Compile 1C DCS from JSON', allow_abbrev=False)
     parser.add_argument('-DefinitionFile', type=str, default=None)
     parser.add_argument('-Value', type=str, default=None)

@@ -36,6 +36,7 @@ def get_our_httpd(httpd_exe_norm):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Remove 1C web publication', allow_abbrev=False)
     parser.add_argument('-AppName', type=str, default='', help='Publication name')
     parser.add_argument('-ApachePath', type=str, default='', help='Apache root (default: tools\\apache24)')

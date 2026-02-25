@@ -312,6 +312,7 @@ def new_guid():
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Borrow objects from configuration into extension", allow_abbrev=False)
     parser.add_argument("-ExtensionPath", required=True)
     parser.add_argument("-ConfigPath", required=True)

@@ -129,6 +129,7 @@ def save_xml_bom(tree, path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Edit existing 1C subsystem XML", allow_abbrev=False)
     parser.add_argument("-SubsystemPath", required=True)
     parser.add_argument("-DefinitionFile", default=None)

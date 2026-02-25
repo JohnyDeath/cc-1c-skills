@@ -27,6 +27,7 @@ def write_text_with_bom(path, text):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Add built-in help to 1C object", allow_abbrev=False)
     parser.add_argument("-ObjectName", "-ProcessorName", required=True)
     parser.add_argument("-Lang", default="ru")

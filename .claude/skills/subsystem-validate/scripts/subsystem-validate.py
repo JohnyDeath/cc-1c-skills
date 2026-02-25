@@ -61,6 +61,7 @@ def find_duplicates(items):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description='Validate 1C subsystem XML structure', allow_abbrev=False
     )

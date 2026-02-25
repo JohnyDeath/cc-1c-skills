@@ -110,6 +110,7 @@ def find_command_by_name(section, cmd_name):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Edit 1C CommandInterface.xml", allow_abbrev=False)
     parser.add_argument("-CIPath", required=True)
     parser.add_argument("-DefinitionFile", default=None)

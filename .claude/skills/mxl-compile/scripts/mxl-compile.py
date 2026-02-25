@@ -19,6 +19,7 @@ def write_utf8_bom(path, content):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Compile 1C spreadsheet from JSON', allow_abbrev=False)
     parser.add_argument('-JsonPath', type=str, required=True)
     parser.add_argument('-OutputPath', type=str, required=True)

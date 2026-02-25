@@ -43,6 +43,7 @@ def get_all_httpd():
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Stop Apache HTTP Server', allow_abbrev=False)
     parser.add_argument('-ApachePath', type=str, default='', help='Apache root (default: tools\\apache24)')
     args = parser.parse_args()

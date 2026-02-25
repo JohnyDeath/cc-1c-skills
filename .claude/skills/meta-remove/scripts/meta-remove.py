@@ -106,6 +106,7 @@ def save_xml_bom(tree, path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Remove metadata object from 1C configuration dump", allow_abbrev=False)
     parser.add_argument("-ConfigDir", required=True)
     parser.add_argument("-Object", required=True)

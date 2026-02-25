@@ -138,6 +138,7 @@ def save_xml_bom(tree, path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Edit 1C configuration root (Configuration.xml)", allow_abbrev=False)
     parser.add_argument("-ConfigPath", required=True)
     parser.add_argument("-DefinitionFile", default=None)

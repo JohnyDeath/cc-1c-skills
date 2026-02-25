@@ -33,6 +33,7 @@ def resolve_v8path(v8path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description="Load 1C configuration from XML files",
         allow_abbrev=False,

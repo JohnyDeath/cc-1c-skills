@@ -55,6 +55,7 @@ def run_git(config_dir, git_args):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description="Load Git changes into 1C database",
         allow_abbrev=False,

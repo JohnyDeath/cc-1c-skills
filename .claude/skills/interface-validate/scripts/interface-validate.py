@@ -70,6 +70,7 @@ def find_duplicates(items):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description='Validate 1C CommandInterface.xml structure', allow_abbrev=False
     )

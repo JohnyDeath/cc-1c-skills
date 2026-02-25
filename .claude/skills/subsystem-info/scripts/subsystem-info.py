@@ -9,6 +9,8 @@ import sys
 from collections import OrderedDict
 from lxml import etree
 
+sys.stdout.reconfigure(encoding="utf-8")
+
 # --- Argument parsing ---
 parser = argparse.ArgumentParser(description="Analyze 1C subsystem structure", allow_abbrev=False)
 parser.add_argument("-SubsystemPath", required=True, help="Path to subsystem XML or Subsystems/ directory")

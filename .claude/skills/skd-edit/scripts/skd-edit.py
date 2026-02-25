@@ -8,6 +8,8 @@ import uuid
 
 from lxml import etree
 
+sys.stdout.reconfigure(encoding="utf-8")
+
 # ── arg parsing ──────────────────────────────────────────────
 
 VALID_OPS = [

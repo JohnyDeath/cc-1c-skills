@@ -45,6 +45,7 @@ def int_text(node):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description='Validate 1C spreadsheet document Template.xml', allow_abbrev=False
     )

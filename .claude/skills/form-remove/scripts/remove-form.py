@@ -23,6 +23,7 @@ def save_xml_with_bom(tree, path):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Remove form from 1C object", allow_abbrev=False)
     parser.add_argument("-ObjectName", "-ProcessorName", required=True)
     parser.add_argument("-FormName", required=True)
