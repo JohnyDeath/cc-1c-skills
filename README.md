@@ -44,7 +44,7 @@
 
 ### Кроссплатформенный режим (Python)
 
-Для работы на **Linux/Mac** можно переключить навыки на Python 3:
+На Windows рекомендуется использовать PS1-рантайм (по умолчанию) как более стабильный и протестированный. Python-порты — для **Linux/Mac** или если PowerShell недоступен. PS1-скрипты — мастер-версия; Python-порты производные (см. [Python Porting Guide](docs/python-porting-guide.md)).
 
 ```bash
 python scripts/switch-to-python.py     # переключить на Python
