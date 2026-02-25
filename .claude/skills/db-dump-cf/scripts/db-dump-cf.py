@@ -68,26 +68,26 @@ def main():
         arguments = ["DESIGNER"]
 
         if args.InfoBaseServer and args.InfoBaseRef:
-            arguments.extend(["/S", f'"{args.InfoBaseServer}/{args.InfoBaseRef}"'])
+            arguments.extend(["/S", f"{args.InfoBaseServer}/{args.InfoBaseRef}"])
         else:
-            arguments.extend(["/F", f'"{args.InfoBasePath}"'])
+            arguments.extend(["/F", args.InfoBasePath])
 
         if args.UserName:
-            arguments.append(f'/N"{args.UserName}"')
+            arguments.append(f"/N{args.UserName}")
         if args.Password:
-            arguments.append(f'/P"{args.Password}"')
+            arguments.append(f"/P{args.Password}")
 
-        arguments.extend(["/DumpCfg", f'"{args.OutputFile}"'])
+        arguments.extend(["/DumpCfg", args.OutputFile])
 
         # --- Extensions ---
         if args.Extension:
-            arguments.extend(["-Extension", f'"{args.Extension}"'])
+            arguments.extend(["-Extension", args.Extension])
         elif args.AllExtensions:
             arguments.append("-AllExtensions")
 
         # --- Output ---
         out_file = os.path.join(temp_dir, "dump_cf_log.txt")
-        arguments.extend(["/Out", f'"{out_file}"'])
+        arguments.extend(["/Out", out_file])
         arguments.append("/DisableStartupDialogs")
 
         # --- Execute ---

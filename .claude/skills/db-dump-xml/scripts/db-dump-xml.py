@@ -89,16 +89,16 @@ def main():
         arguments = ["DESIGNER"]
 
         if args.InfoBaseServer and args.InfoBaseRef:
-            arguments += ["/S", f'"{args.InfoBaseServer}/{args.InfoBaseRef}"']
+            arguments += ["/S", f"{args.InfoBaseServer}/{args.InfoBaseRef}"]
         else:
-            arguments += ["/F", f'"{args.InfoBasePath}"']
+            arguments += ["/F", args.InfoBasePath]
 
         if args.UserName:
-            arguments.append(f'/N"{args.UserName}"')
+            arguments.append(f"/N{args.UserName}")
         if args.Password:
-            arguments.append(f'/P"{args.Password}"')
+            arguments.append(f"/P{args.Password}")
 
-        arguments += ["/DumpConfigToFiles", f'"{args.ConfigDir}"']
+        arguments += ["/DumpConfigToFiles", args.ConfigDir]
         arguments += ["-Format", args.Format]
 
         if args.Mode == "Full":
@@ -115,7 +115,7 @@ def main():
             with open(list_file, "w", encoding="utf-8-sig") as f:
                 f.write("\n".join(object_list))
 
-            arguments += ["-listFile", f'"{list_file}"']
+            arguments += ["-listFile", list_file]
             print(f"Objects to dump: {len(object_list)}")
             for obj in object_list:
                 print(f"  {obj}")
@@ -125,13 +125,13 @@ def main():
 
         # --- Extensions ---
         if args.Extension:
-            arguments += ["-Extension", f'"{args.Extension}"']
+            arguments += ["-Extension", args.Extension]
         elif args.AllExtensions:
             arguments.append("-AllExtensions")
 
         # --- Output ---
         out_file = os.path.join(temp_dir, "dump_log.txt")
-        arguments += ["/Out", f'"{out_file}"']
+        arguments += ["/Out", out_file]
         arguments.append("/DisableStartupDialogs")
 
         # --- Execute ---

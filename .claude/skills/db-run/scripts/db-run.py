@@ -55,14 +55,14 @@ def main():
     arguments = ["ENTERPRISE"]
 
     if args.InfoBaseServer and args.InfoBaseRef:
-        arguments.extend(["/S", f'"{args.InfoBaseServer}/{args.InfoBaseRef}"'])
+        arguments.extend(["/S", f"{args.InfoBaseServer}/{args.InfoBaseRef}"])
     else:
-        arguments.extend(["/F", f'"{args.InfoBasePath}"'])
+        arguments.extend(["/F", args.InfoBasePath])
 
     if args.UserName:
-        arguments.append(f'/N"{args.UserName}"')
+        arguments.append(f"/N{args.UserName}")
     if args.Password:
-        arguments.append(f'/P"{args.Password}"')
+        arguments.append(f"/P{args.Password}")
 
     # --- Optional params ---
     execute = args.Execute
@@ -75,11 +75,11 @@ def main():
             execute = ""
 
     if execute:
-        arguments.extend(["/Execute", f'"{execute}"'])
+        arguments.extend(["/Execute", execute])
     if args.CParam:
-        arguments.extend(["/C", f'"{args.CParam}"'])
+        arguments.extend(["/C", args.CParam])
     if args.URL:
-        arguments.extend(["/URL", f'"{args.URL}"'])
+        arguments.extend(["/URL", args.URL])
 
     arguments.append("/DisableStartupDialogs")
 

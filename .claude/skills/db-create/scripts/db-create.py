@@ -68,22 +68,22 @@ def main():
         if args.InfoBaseServer and args.InfoBaseRef:
             arguments.append(f'Srvr="{args.InfoBaseServer}";Ref="{args.InfoBaseRef}"')
         else:
-            arguments.append(f'File="{args.InfoBasePath}"')
+            arguments.append(f'File={args.InfoBasePath}')
 
         # --- Template ---
         if args.UseTemplate:
-            arguments.extend(["/UseTemplate", f'"{args.UseTemplate}"'])
+            arguments.extend(["/UseTemplate", args.UseTemplate])
 
         # --- Add to list ---
         if args.AddToList:
             if args.ListName:
-                arguments.extend(["/AddToList", f'"{args.ListName}"'])
+                arguments.extend(["/AddToList", args.ListName])
             else:
                 arguments.append("/AddToList")
 
         # --- Output ---
         out_file = os.path.join(temp_dir, "create_log.txt")
-        arguments.extend(["/Out", f'"{out_file}"'])
+        arguments.extend(["/Out", out_file])
         arguments.append("/DisableStartupDialogs")
 
         # --- Execute ---

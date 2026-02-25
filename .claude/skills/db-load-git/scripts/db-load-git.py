@@ -216,30 +216,30 @@ def main():
         arguments = ["DESIGNER"]
 
         if args.InfoBaseServer and args.InfoBaseRef:
-            arguments += ["/S", f'"{args.InfoBaseServer}/{args.InfoBaseRef}"']
+            arguments += ["/S", f"{args.InfoBaseServer}/{args.InfoBaseRef}"]
         else:
-            arguments += ["/F", f'"{args.InfoBasePath}"']
+            arguments += ["/F", args.InfoBasePath]
 
         if args.UserName:
-            arguments.append(f'/N"{args.UserName}"')
+            arguments.append(f"/N{args.UserName}")
         if args.Password:
-            arguments.append(f'/P"{args.Password}"')
+            arguments.append(f"/P{args.Password}")
 
-        arguments += ["/LoadConfigFromFiles", f'"{args.ConfigDir}"']
-        arguments += ["-listFile", f'"{list_file}"']
+        arguments += ["/LoadConfigFromFiles", args.ConfigDir]
+        arguments += ["-listFile", list_file]
         arguments += ["-Format", args.Format]
         arguments.append("-partial")
         arguments.append("-updateConfigDumpInfo")
 
         # --- Extensions ---
         if args.Extension:
-            arguments += ["-Extension", f'"{args.Extension}"']
+            arguments += ["-Extension", args.Extension]
         elif args.AllExtensions:
             arguments.append("-AllExtensions")
 
         # --- Output ---
         out_file = os.path.join(temp_dir, "load_log.txt")
-        arguments += ["/Out", f'"{out_file}"']
+        arguments += ["/Out", out_file]
         arguments.append("/DisableStartupDialogs")
 
         # --- Execute ---
