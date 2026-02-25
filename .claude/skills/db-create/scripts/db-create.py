@@ -68,7 +68,7 @@ def main():
         if args.InfoBaseServer and args.InfoBaseRef:
             arguments.append(f'Srvr="{args.InfoBaseServer}";Ref="{args.InfoBaseRef}"')
         else:
-            arguments.append(f'File={args.InfoBasePath}')
+            arguments.append(f'File="{args.InfoBasePath}"')
 
         # --- Template ---
         if args.UseTemplate:
