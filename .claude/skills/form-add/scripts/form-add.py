@@ -48,7 +48,9 @@ def main():
 
     # --- Phase 1: Determine object type ---
 
-    if not os.path.exists(object_path):
+    if os.path.isdir(object_path):
+        object_path = object_path.rstrip("/\\") + ".xml"
+    if not os.path.isfile(object_path):
         print(f"Файл объекта не найден: {object_path}", file=sys.stderr)
         sys.exit(1)
 
