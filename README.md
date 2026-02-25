@@ -39,8 +39,23 @@
 
 ## Требования
 
-- **Windows** с PowerShell 5.1+ (входит в Windows)
+- **Windows** с PowerShell 5.1+ (входит в Windows) — рантайм по умолчанию
 - **1С:Предприятие 8.3** — для сборки/разборки EPF/ERF (навыки генерации XML работают без платформы)
+
+### Кроссплатформенный режим (Python)
+
+Для работы на **Linux/Mac** можно переключить навыки на Python 3:
+
+```bash
+python scripts/switch-to-python.py     # переключить на Python
+python scripts/switch-to-powershell.py  # вернуть на PowerShell
+```
+
+Дополнительные зависимости Python-рантайма:
+- `lxml>=4.9.0` — для навыков, работающих с DOM (edit/validate/info)
+- `psutil>=5.9.0` — для web-навыков (управление Apache)
+
+Параметры скриптов идентичны для обоих рантаймов — переключение меняет только интерпретатор в вызовах. Подробнее: [Python Porting Guide](docs/python-porting-guide.md).
 
 ## Спецификации
 
@@ -134,6 +149,9 @@
 ├── web-stop/            # Остановка Apache
 ├── web-unpublish/       # Удаление публикации
 └── img-grid/            # Сетка для анализа изображений
+scripts/
+├── switch-to-python.py    # Переключение навыков на Python-рантайм
+└── switch-to-powershell.py # Возврат на PowerShell-рантайм
 docs/
 ├── epf-guide.md            # Гайд: внешние обработки и отчёты
 ├── mxl-guide.md            # Гайд: табличный документ
@@ -162,5 +180,6 @@ docs/
 ├── role-dsl-spec.md        # Спецификация Role DSL
 ├── 1c-extension-spec.md    # Спецификация расширений конфигурации (CFE)
 ├── 1c-subsystem-spec.md    # Спецификация подсистем и командного интерфейса
-└── web-spec.md             # Спецификация веб-публикации (VRD, httpd.conf, Apache)
+├── web-spec.md             # Спецификация веб-публикации (VRD, httpd.conf, Apache)
+└── python-porting-guide.md # Руководство по Python-портам навыков
 ```

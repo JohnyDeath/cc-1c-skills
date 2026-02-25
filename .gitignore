@@ -16,5 +16,8 @@ test-tmp/
 # Инструменты (portable Apache и т.д.)
 tools/
 
+# Python кэш
+__pycache__/
+
 # Локальный реестр баз данных 1С
 .v8-project.json
