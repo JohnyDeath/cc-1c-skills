@@ -24,6 +24,7 @@ def save_xml_with_bom(tree, path):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Remove template from 1C object", allow_abbrev=False)
     parser.add_argument("-ObjectName", "-ProcessorName", required=True)
     parser.add_argument("-TemplateName", required=True)

@@ -463,6 +463,7 @@ def mode_b(objects, extension_path, config_path):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Analyze and compare 1C configuration extension (CFE)", allow_abbrev=False)
     parser.add_argument("-ExtensionPath", required=True, help="Path to extension dump root")
     parser.add_argument("-ConfigPath", required=True, help="Path to base config dump root")

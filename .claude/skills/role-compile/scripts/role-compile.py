@@ -432,6 +432,7 @@ def parse_object_entry(entry):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Compile 1C role from JSON', allow_abbrev=False)
     parser.add_argument('-JsonPath', type=str, required=True)
     parser.add_argument('-OutputDir', type=str, required=True)

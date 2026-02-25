@@ -29,6 +29,7 @@ def write_text_with_bom(path, text):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Add managed form to 1C processor", allow_abbrev=False)
     parser.add_argument("-ProcessorName", required=True)
     parser.add_argument("-FormName", required=True)

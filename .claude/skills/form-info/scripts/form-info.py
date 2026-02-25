@@ -333,6 +333,7 @@ def build_tree(child_items_node, prefix, tree_lines):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Analyze 1C managed form structure", allow_abbrev=False)
     parser.add_argument("-FormPath", required=True, help="Path to Form.xml")
     parser.add_argument("-Limit", type=int, default=150, help="Max lines to show")

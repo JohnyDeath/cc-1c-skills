@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description="Generate method interceptor for 1C extension (CFE)",
         allow_abbrev=False,

@@ -16,6 +16,7 @@ def write_utf8_bom(path, content):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Create empty 1C configuration scaffold', allow_abbrev=False)
     parser.add_argument('-Name', dest='Name', required=True)
     parser.add_argument('-Synonym', dest='Synonym', default=None)

@@ -34,6 +34,7 @@ def get_httpd_by_exe(httpd_exe_norm):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description='Apache & 1C publication status', allow_abbrev=False)
     parser.add_argument('-ApachePath', type=str, default='', help='Apache root (default: tools\\apache24)')
     args = parser.parse_args()

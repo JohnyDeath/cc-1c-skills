@@ -1972,6 +1972,7 @@ def save_xml(tree, path):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     global xml_tree, xml_root, obj_element, obj_type, md_ns
     global properties_el, child_objects_el, obj_name
     global add_count, remove_count, modify_count, warn_count

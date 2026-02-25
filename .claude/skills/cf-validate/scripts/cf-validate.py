@@ -149,6 +149,7 @@ class Reporter:
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description='Validate 1C configuration XML structure', allow_abbrev=False
     )
