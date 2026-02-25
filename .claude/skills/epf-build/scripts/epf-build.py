@@ -75,20 +75,20 @@ def main():
         arguments = ["DESIGNER"]
 
         if args.InfoBaseServer and args.InfoBaseRef:
-            arguments += ["/S", f'"{args.InfoBaseServer}/{args.InfoBaseRef}"']
+            arguments += ["/S", f"{args.InfoBaseServer}/{args.InfoBaseRef}"]
         else:
-            arguments += ["/F", f'"{args.InfoBasePath}"']
+            arguments += ["/F", args.InfoBasePath]
 
         if args.UserName:
-            arguments.append(f'/N"{args.UserName}"')
+            arguments.append(f"/N{args.UserName}")
         if args.Password:
-            arguments.append(f'/P"{args.Password}"')
+            arguments.append(f"/P{args.Password}")
 
-        arguments += ["/LoadExternalDataProcessorOrReportFromFiles", f'"{args.SourceFile}"', f'"{args.OutputFile}"']
+        arguments += ["/LoadExternalDataProcessorOrReportFromFiles", args.SourceFile, args.OutputFile]
 
         # --- Output ---
         out_file = os.path.join(temp_dir, "build_log.txt")
-        arguments += ["/Out", f'"{out_file}"']
+        arguments += ["/Out", out_file]
         arguments.append("/DisableStartupDialogs")
 
         # --- Execute ---
