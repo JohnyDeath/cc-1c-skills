@@ -2077,9 +2077,17 @@ types_with_attr_ts = [
 ]
 
 if obj_type in types_with_attr_ts:
+    def _as_list(val):
+        """Normalize attributes: dict {"K":"V"} → ["K:V"], list/other → list."""
+        if val is None:
+            return []
+        if isinstance(val, dict):
+            return [f"{k}:{v}" for k, v in val.items()]
+        return list(val)
+
     attrs = []
     if defn.get('attributes'):
-        for a in defn['attributes']:
+        for a in _as_list(defn['attributes']):
             attrs.append(parse_attribute_shorthand(a))
     ts_sections = {}
     ts_order = []
@@ -2088,25 +2096,25 @@ if obj_type in types_with_attr_ts:
         if isinstance(ts_data, list):
             for ts in ts_data:
                 ts_name = ts['name']
-                ts_cols = list(ts.get('attributes', []))
+                ts_cols = _as_list(ts.get('attributes', []))
                 ts_sections[ts_name] = ts_cols
                 ts_order.append(ts_name)
         else:
             for k, v in ts_data.items():
-                ts_sections[k] = list(v) if isinstance(v, list) else [v]
+                ts_sections[k] = _as_list(v)
                 ts_order.append(k)
     # ChartOfAccounts: AccountingFlags + ExtDimensionAccountingFlags
     acct_flags = []
     ext_dim_flags = []
     if obj_type == 'ChartOfAccounts':
         if defn.get('accountingFlags'):
-            acct_flags = list(defn['accountingFlags'])
+            acct_flags = _as_list(defn['accountingFlags'])
         if defn.get('extDimensionAccountingFlags'):
-            ext_dim_flags = list(defn['extDimensionAccountingFlags'])
+            ext_dim_flags = _as_list(defn['extDimensionAccountingFlags'])
     # Task: AddressingAttributes
     addr_attrs = []
     if obj_type == 'Task' and defn.get('addressingAttributes'):
-        addr_attrs = list(defn['addressingAttributes'])
+        addr_attrs = _as_list(defn['addressingAttributes'])
     child_count = len(attrs) + len(ts_sections) + len(acct_flags) + len(ext_dim_flags) + len(addr_attrs)
     if child_count > 0:
         has_children = True
