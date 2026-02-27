@@ -579,18 +579,7 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
   // 3. Paste text via clipboard (trusted event → triggers real 1C autocomplete)
   await page.evaluate(`navigator.clipboard.writeText(${JSON.stringify(text)})`);
   await page.keyboard.press('Control+V');
-  // Smart wait: poll for EDD dropdown or "not in list" cloud (max 2s)
-  await waitForCondition(`(() => {
-    const edd = document.getElementById('editDropDown');
-    if (edd && edd.offsetWidth > 0) return true;
-    for (const el of document.querySelectorAll('div')) {
-      if (el.offsetWidth === 0) continue;
-      const s = getComputedStyle(el);
-      if ((s.position === 'absolute' || s.position === 'fixed') &&
-          (parseInt(s.zIndex) || 0) >= 100 && (el.innerText || '').includes('нет в списке')) return true;
-    }
-    return false;
-  })()`, ACTION_WAIT);
+  await page.waitForTimeout(2000);
 
   // 4. Check editDropDown for autocomplete suggestions
   const eddState = await page.evaluate(`(() => {
@@ -1247,13 +1236,7 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
   // 2. Add new row if requested
   if (add) {
     await clickElement('Добавить');
-    // Smart wait: poll until an INPUT inside a grid gets focus
-    await waitForCondition(`(() => {
-      const f = document.activeElement;
-      if (!f || f.tagName !== 'INPUT') return false;
-      let n = f; while (n) { if (n.classList?.contains('grid')) return true; n = n.parentElement; }
-      return false;
-    })()`, ACTION_WAIT);
+    await page.waitForTimeout(1000);
   }
 
   // 2b. Enter edit mode on existing row by dblclick
@@ -1373,10 +1356,9 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
     }
 
     if (!matchedKey) {
-      // Skip this cell — Tab + wait for focus to move
-      const skipId = cell.id;
+      // Skip this cell
       await page.keyboard.press('Tab');
-      await waitForCondition(`document.activeElement?.id !== '${skipId}'`, 500);
+      await page.waitForTimeout(300);
       continue;
     }
 
@@ -1387,13 +1369,7 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
     await page.keyboard.press('Control+A');
     await page.evaluate(`navigator.clipboard.writeText(${JSON.stringify(text)})`);
     await page.keyboard.press('Control+V');
-    // Smart wait: poll for EDD dropdown (reference) or stable input value
-    await waitForCondition(`(() => {
-      const edd = document.getElementById('editDropDown');
-      if (edd && edd.offsetWidth > 0) return true;
-      const f = document.activeElement;
-      return f && f.tagName === 'INPUT' && f.value && f.value.length > 0;
-    })()`, 1500);
+    await page.waitForTimeout(1500);
 
     // Check for EDD autocomplete (indicates reference field)
     const eddItems = await page.evaluate(`(() => {
@@ -1448,17 +1424,15 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
 
       // Done? If so, don't Tab (avoids creating a new row after last cell)
       if ([...pending.values()].every(p => p.filled)) break;
-      // Tab to move to next cell — wait for focus to change
-      const afterEddId = cell.id;
+      // Tab to move to next cell
       await page.keyboard.press('Tab');
-      await waitForCondition(`document.activeElement?.id !== '${afterEddId}'`, 500);
+      await page.waitForTimeout(500);
       continue;
     }
 
-    // No EDD — press Tab to commit the value, wait for focus change
-    const commitId = cell.id;
+    // No EDD — press Tab to commit the value
     await page.keyboard.press('Tab');
-    await waitForCondition(`document.activeElement?.id !== '${commitId}'`, 1000);
+    await page.waitForTimeout(1000);
 
     // Check for "нет в списке" cloud popup (reference field, value not found)
     const notInList = await page.evaluate(`(() => {
