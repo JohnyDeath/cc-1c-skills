@@ -202,6 +202,15 @@ Hint: if `readTable()` returns `hierarchical: true`, the list has groups.
 
 `closeForm()` is preferred over `clickElement('×')` — close buttons on tabs are ambiguous.
 
+### Keyboard shortcuts
+
+| Key | Context | Action |
+|-----|---------|--------|
+| `F8` | Reference field focused | Open creation form for the field's catalog |
+| `Shift+F4` | Reference field focused | Clear field value |
+| `F4` | Reference field focused | Open selection form |
+| `Alt+F` | List/table form | Open advanced search dialog |
+
 ### Submenu navigation
 
 ```js

@@ -25,7 +25,7 @@ const DETECT_FORM_FN = `function detectForm() {
   const modal = document.getElementById('modalSurface');
   if (modal && modal.offsetWidth > 0) {
     const maxForm = Math.max(...candidates);
-    if (counts[maxForm] >= 2) return maxForm;
+    if (counts[maxForm] >= 1) return maxForm;
   }
   return candidates.reduce((best, n) => counts[n] > counts[best] ? n : best);
 }`;
@@ -214,7 +214,7 @@ const READ_FORM_FN = `function readForm(p) {
   });
   // Also check search field value
   const searchInput = [...document.querySelectorAll('input.editInput[id^="' + p + '"]')]
-    .find(el => el.offsetWidth > 0 && /Строк[аи]Поиска/i.test(el.id));
+    .find(el => el.offsetWidth > 0 && /Строк[аи]Поиска|SearchString/i.test(el.id));
   if (searchInput?.value) {
     filters.push({ type: 'search', value: searchInput.value });
   }

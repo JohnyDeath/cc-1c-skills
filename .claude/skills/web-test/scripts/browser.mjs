@@ -916,7 +916,16 @@ export async function clickElement(text, { dblclick } = {}) {
     if (clickErr.message.includes('intercepts pointer events')) {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(500);
-      await page.click(selector, { timeout: 5000 });
+      try {
+        await page.click(selector, { timeout: 5000 });
+      } catch (clickErr2) {
+        if (clickErr2.message.includes('intercepts pointer events')) {
+          // Persistent surface (e.g. grid editing overlay) — force click
+          await page.click(selector, { force: true, timeout: 5000 });
+        } else {
+          throw clickErr2;
+        }
+      }
     } else {
       throw clickErr;
     }
@@ -1204,6 +1213,7 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
+  try {
   // 1. Switch tab if requested
   if (tab) {
     await clickElement(tab);
@@ -1548,6 +1558,11 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
   if (notFilled.length > 0) result.notFilled = notFilled;
   result.form = formData;
   return result;
+
+  } catch (e) {
+    const form = await getFormState().catch(() => null);
+    return { error: 'fillTableRow_failed', message: e.message, form };
+  }
 }
 
 /**
@@ -1636,7 +1651,7 @@ export async function filterList(text, { field, exact } = {}) {
     const searchId = await page.evaluate(`(() => {
       const p = 'form${formNum}_';
       const el = [...document.querySelectorAll('input.editInput[id^="' + p + '"]')]
-        .find(el => el.offsetWidth > 0 && /Строк[аи]Поиска/i.test(el.id));
+        .find(el => el.offsetWidth > 0 && /Строк[аи]Поиска|SearchString/i.test(el.id));
       return el ? el.id : null;
     })()`);
     if (!searchId) return { error: 'no_search_field', message: 'No search input found on this form' };
@@ -1947,7 +1962,7 @@ export async function unfilterList({ field } = {}) {
   const searchInfo = await page.evaluate(`(() => {
     const p = 'form${formNum}_';
     const el = [...document.querySelectorAll('input.editInput[id^="' + p + '"]')]
-      .find(el => el.offsetWidth > 0 && /Строк[аи]Поиска/i.test(el.id));
+      .find(el => el.offsetWidth > 0 && /Строк[аи]Поиска|SearchString/i.test(el.id));
     return el ? { id: el.id, value: el.value || '' } : null;
   })()`);
 
