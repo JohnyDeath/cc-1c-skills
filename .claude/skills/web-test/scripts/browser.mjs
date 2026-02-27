@@ -537,10 +537,10 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
     await page.click(selector);
   } catch (e) {
     if (e.message.includes('intercepts pointer events')) {
-      await dismissErrors();
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(500);
-      try { await page.click(selector); } catch (e2) {
+      // Try force click first (no side effects), then Escape as fallback
+      try {
+        await page.click(selector, { force: true });
+      } catch (e2) {
         if (e2.message.includes('intercepts pointer events')) {
           await dismissErrors();
           await page.keyboard.press('Escape');
@@ -912,16 +912,16 @@ export async function clickElement(text, { dblclick } = {}) {
   try {
     await page.click(selector, { timeout: 5000 });
   } catch (clickErr) {
-    // If surface overlay intercepts — dismiss with Escape and retry
     if (clickErr.message.includes('intercepts pointer events')) {
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(500);
+      // Surface overlay intercepts — try force click first (no side effects),
+      // then Escape + retry as fallback (Escape can trigger save dialogs on forms)
       try {
-        await page.click(selector, { timeout: 5000 });
+        await page.click(selector, { force: true, timeout: 5000 });
       } catch (clickErr2) {
         if (clickErr2.message.includes('intercepts pointer events')) {
-          // Persistent surface (e.g. grid editing overlay) — force click
-          await page.click(selector, { force: true, timeout: 5000 });
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(500);
+          await page.click(selector, { timeout: 5000 });
         } else {
           throw clickErr2;
         }
