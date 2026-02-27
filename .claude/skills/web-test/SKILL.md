@@ -102,7 +102,7 @@ In `exec` sandbox, all browser.mjs functions are available as globals — no `im
 
 | Function | Description |
 |----------|-------------|
-| `getFormState()` | Current form: fields, buttons, tabs, table preview, filters |
+| `getFormState()` | Current form: fields (with `required` flag for unfilled mandatory fields), buttons, tabs, table preview, filters |
 | `readTable({maxRows, offset})` | Full table data with pagination. Default: 20 rows |
 | `getSections()` | Sections + commands of active section |
 | `getPageState()` | Sections + open tabs |

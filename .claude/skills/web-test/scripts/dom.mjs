@@ -58,6 +58,7 @@ const READ_FORM_FN = `function readForm(p) {
     if (el.type && el.type !== 'text') field.type = el.type;
     if (document.activeElement === el) field.focused = true;
     if (actions.length) field.actions = actions;
+    if (el.closest('.inputsBox')?.classList.contains('markIncomplete')) field.required = true;
     fields.push(field);
   });
 
@@ -73,6 +74,7 @@ const READ_FORM_FN = `function readForm(p) {
     if (el.readOnly) field.readonly = true;
     if (el.disabled) field.disabled = true;
     if (document.activeElement === el) field.focused = true;
+    if (el.closest('.inputsBox')?.classList.contains('markIncomplete')) field.required = true;
     fields.push(field);
   });
 
