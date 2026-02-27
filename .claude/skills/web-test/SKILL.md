@@ -166,32 +166,17 @@ Single `clickElement(text)` only selects the row. To open — always use `{dblcl
 
 ### Hierarchical lists (catalogs)
 
-Simple search and `filterList(text, {field})` do NOT work on hierarchical catalogs —
-they navigate the tree instead of filtering. For Контрагенты, Номенклатура, Сотрудники, etc.
-switch to flat list mode first:
+For hierarchical catalogs (Контрагенты, Номенклатура, Сотрудники, etc.) use simple
+search — it works correctly and flattens the view:
 
 ```js
-// 1. Detect: readTable returns `hierarchical: true` when rows have groups
-const table = await readTable({ maxRows: 5 });
-if (table.hierarchical) {
-  // 2. Switch to flat mode via "Ещё" → "Режим просмотра" → "Список"
-  await clickElement('Еще');
-  await clickElement('Режим просмотра');
-  await clickElement('Список');
-}
-
-// 3. Now filterList works normally
-await filterList('Конфетпром', { field: 'Наименование в программе' });
-// ...work with results...
-
-// 4. Clean up: switch back to hierarchical mode
-await unfilterList();
-await clickElement('Еще');
-await clickElement('Режим просмотра');
-await clickElement('Иерархический список');
+await filterList('Конфетпром');  // simple search — works on hierarchical lists
+await clickElement('Конфетпром ООО', { dblclick: true });  // open found item
+await closeForm();               // close item
+await unfilterList();             // restore hierarchical view
 ```
 
-Hint: if `readTable()` returns `hierarchical: true`, always switch to flat mode before filtering.
+Hint: if `readTable()` returns `hierarchical: true`, the list has groups.
 
 ### Closing forms
 
