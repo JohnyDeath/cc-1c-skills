@@ -22,19 +22,32 @@ Writes and runs automation scripts for 1C web client via Playwright.
 /web-test Проверь список контрагентов — прочитай таблицу
 ```
 
+## Setup (first time)
+
+```bash
+cd .claude/skills/web-test/scripts && npm install
+```
+
+Requires Node.js 18+. `npm install` downloads Playwright and Chromium browser.
+
 ## Workflow
 
-Runner path: `C:\WS\tasks\1c-web-client-mcp\src\run.mjs`
+Runner: `.claude/skills/web-test/scripts/run.mjs`
+
+Use `RUN` shorthand in all commands:
+```bash
+RUN=".claude/skills/web-test/scripts/run.mjs"
+```
 
 ### Interactive mode (step-by-step)
 
 ```bash
 # 1. Start browser session — blocks, prints JSON when ready
 #    Use run_in_background=true (Bash tool), then wait for "Browser ready"
-node src/run.mjs start <url>
+node $RUN start <url>
 
 # 2. Execute scripts — each returns JSON with results
-cat <<'SCRIPT' | node src/run.mjs exec -
+cat <<'SCRIPT' | node $RUN exec -
 await navigateSection('Покупки');
 const form = await openCommand('Авансовые отчеты');
 console.log(JSON.stringify(form.fields, null, 2));
@@ -43,13 +56,13 @@ SCRIPT
 # 3. React to output, run more scripts...
 
 # 4. Screenshot anytime
-node src/run.mjs shot result.png
+node $RUN shot result.png
 
 # 5. Check session is alive
-node src/run.mjs status
+node $RUN status
 
 # 6. Stop when done (logout + close browser)
-node src/run.mjs stop
+node $RUN stop
 ```
 
 `start` blocks forever (keeps browser alive). Run it in background, then use `exec`/`shot`/`stop` from other commands.
@@ -59,9 +72,9 @@ node src/run.mjs stop
 Write `.mjs` script, run via exec:
 
 ```bash
-node src/run.mjs start <url>   # in background
-node src/run.mjs exec test-scenario.mjs
-node src/run.mjs stop
+node $RUN start <url>   # in background
+node $RUN exec test-scenario.mjs
+node $RUN stop
 ```
 
 ## URL
@@ -234,7 +247,7 @@ writeFileSync('result.png', png);
 
 - **Headed mode** — 1C requires visible browser, no headless
 - **1C loads 30-60s** on initial connect (wait is built into `start`)
-- **Fuzzy match** — all name lookups use fuzzy search (exact > includes)
+- **Fuzzy match** — all name lookups use fuzzy search (exact > startsWith > includes)
 - **errorModal** — if response contains `errorModal`, 1C showed an error dialog
 - **Clipboard paste** — all fields filled via Ctrl+V (triggers 1C events properly)
-- **Stdin pipe for Cyrillic** — use `cat <<'SCRIPT' | node src/run.mjs exec -` to avoid bash escaping
+- **Stdin pipe for Cyrillic** — use `cat <<'SCRIPT' | node $RUN exec -` to avoid bash escaping
