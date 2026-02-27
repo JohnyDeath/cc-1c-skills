@@ -10,166 +10,190 @@ allowed-tools:
   - Grep
 ---
 
-# /web-test — Тестирование 1С через веб-клиент
+# /web-test — Browser automation for 1C web client
 
-Пишет и запускает скрипт автоматизации для 1С веб-клиента через Playwright.
+Writes and runs automation scripts for 1C web client via Playwright.
 
-## Аргумент
+## Usage
 
-Сценарий на естественном языке, например:
 ```
-/web-test Открой Платежное поручение, заполни сумму 5000, сделай скриншот
-/web-test Создай документ "Поступление товаров", выбери организацию "Конфетпром"
+/web-test Открой Платежное поручение, заполни сумму 5000, скриншот
+/web-test Создай "Поступление товаров", организация "Конфетпром"
 /web-test Проверь список контрагентов — прочитай таблицу
 ```
 
-## Как работать
+## Workflow
 
-1. Напиши `.mjs` скрипт в корне проекта 1c-web-client-mcp (`C:\WS\tasks\1c-web-client-mcp`)
-2. Запусти через `node <script>.mjs [url]`
-3. Прочитай stdout + посмотри скриншоты
-4. В `finally` ВСЕГДА вызывай `disconnect()` — иначе лицензия зависнет
+Runner path: `C:\WS\tasks\1c-web-client-mcp\src\run.mjs`
 
-## URL по умолчанию
+### Interactive mode (step-by-step)
 
-Прочитай `.v8-project.json` из корня проекта (`C:\WS\tasks\skills\.v8-project.json`).
-Если задан `webUrl` — используй его. Иначе: `http://localhost:8081/bpdemo`
+```bash
+# 1. Start browser session (stays alive in background)
+node src/run.mjs start <url> &
 
-## API browser.mjs
+# 2. Execute scripts — each returns JSON with results
+cat <<'SCRIPT' | node src/run.mjs exec -
+await navigateSection('Покупки');
+const form = await openCommand('Авансовые отчеты');
+console.log(JSON.stringify(form.fields, null, 2));
+SCRIPT
 
-Путь для импорта: `./src/browser.mjs` (из корня `C:\WS\tasks\1c-web-client-mcp`)
+# 3. React to output, run more scripts...
 
-### Функции
+# 4. Screenshot anytime
+node src/run.mjs shot result.png
 
-| Функция | Описание | Возвращает |
-|---------|----------|------------|
-| `connect(url)` | Открыть браузер, перейти по URL, закрыть стартовые модалки | `{ activeSection, sections, tabs }` |
-| `disconnect()` | Graceful logout + закрыть браузер | `void` |
-| `isConnected()` | Проверить соединение | `boolean` |
-| `getPageState()` | Разделы + вкладки | `{ activeSection, activeTab, sections, tabs }` |
-| `getSections()` | Разделы + команды текущего раздела | `{ activeSection, sections, commands }` |
-| `navigateSection(name)` | Перейти в раздел (fuzzy) | `{ navigated, sections, commands }` |
-| `getCommands()` | Команды текущего раздела | `[[cmd1, cmd2], [cmd3]]` |
-| `openCommand(name)` | Открыть команду (fuzzy) | `{ form, fields, buttons, tabs, ... }` |
-| `getFormState()` | Прочитать текущую форму | `{ form, activeTab, fields, buttons, tabs, texts, hyperlinks, table }` |
-| `readTable({maxRows, offset})` | Прочитать таблицу | `{ name, columns, rows, total, offset, shown }` |
-| `fillFields({field: value})` | Заполнить поля шапки (fuzzy по имени/метке). Clipboard paste, ссылочные — автоподбор, checkbox | `{ filled, form }` |
-| `fillTableRow({field: value}, {tab?, add?})` | Заполнить ячейки строки ТЧ через Tab-навигацию. `add:true` — "Добавить" перед заполнением | `{ filled, notFilled?, form }` |
-| `clickElement(text)` | Кликнуть кнопку/ссылку/вкладку (fuzzy). Обрабатывает submenu | `{ form, clicked, submenu?, hint? }` |
-| `selectValue(field, search?)` | Выбрать из справочника (составная операция) | `{ form, selected, fields, ... }` |
-| `screenshot()` | Скриншот | `Buffer (PNG)` |
-| `wait(seconds)` | Подождать N секунд | `{ form, ... }` |
-| `getPage()` | Сырой Playwright page для продвинутых сценариев | `Page` |
-
-### Поля формы (fields[])
-
-```js
-{
-  name: "СуммаДокумента",    // Внутреннее имя (из DOM ID)
-  label: "Сумма платежа",    // Видимая метка (опционально)
-  value: "1000",             // Текущее значение
-  type: "text|textarea|checkbox|date", // Тип (если не text)
-  readonly: true,            // Только чтение (опционально)
-  disabled: true,            // Заблокировано (опционально)
-  actions: ["select","open","clear","pick"] // Кнопки поля (опционально)
-}
+# 5. Stop when done (logout + close browser)
+node src/run.mjs stop
 ```
 
-### Таблица (table)
+### Batch mode (full scenario in a file)
 
-В `getFormState()` таблица — превью: `{ present, columns, rowCount, preview }`.
-Для полных данных используй `readTable({maxRows: 50, offset: 0})`.
+Write `.mjs` script, run via exec:
 
-### Submenu
+```bash
+node src/run.mjs start <url> &
+# wait for "Browser ready" in output
+node src/run.mjs exec test-scenario.mjs
+node src/run.mjs stop
+```
 
-Если `clickElement()` вернул `submenu[]` — вызови `clickElement()` ещё раз с именем пункта.
+## URL
 
-### Заполнение табличной части
+Read `.v8-project.json` from project root. If `webUrl` is set — use it.
+Default: `http://localhost:8081/bpdemo`
 
-`fillTableRow(fields, { tab, add })` — заполняет ячейки строки ТЧ через Tab-навигацию.
+## Writing exec scripts
+
+In `exec` sandbox, all browser.mjs functions are available as globals — no `import` needed.
+`console.log()` output is captured and returned in the JSON response.
+`writeFileSync` and `readFileSync` are also available.
+
+## API reference
+
+### Navigation
+
+| Function | Description |
+|----------|-------------|
+| `navigateSection(name)` | Go to section (fuzzy match). Returns `{ sections, commands }` |
+| `openCommand(name)` | Open command from function panel (fuzzy). Returns form state |
+| `switchTab(name)` | Switch to open tab/window (fuzzy). Returns form state |
+
+### Reading
+
+| Function | Description |
+|----------|-------------|
+| `getFormState()` | Current form: fields, buttons, tabs, table preview, filters |
+| `readTable({maxRows, offset})` | Full table data with pagination. Default: 20 rows |
+| `getSections()` | Sections + commands of active section |
+| `getPageState()` | Sections + open tabs |
+| `getCommands()` | Commands of current section |
+
+### Actions
+
+| Function | Description |
+|----------|-------------|
+| `clickElement(text)` | Click button/link/tab (fuzzy). If returns `submenu[]` — click again with item name |
+| `fillFields({name: value})` | Fill form fields (fuzzy by name or label). Auto-detects checkboxes, radio, reference fields |
+| `selectValue(field, search)` | Select from reference field via dropdown/selection form |
+| `fillTableRow(fields, opts)` | Fill table row cells via Tab navigation. See below |
+| `deleteTableRow(row, {tab?})` | Delete row by 0-based index |
+| `filterList(text, opts)` | Filter list. Simple (text only) or advanced (text + field). See below |
+| `unfilterList({field?})` | Clear filters. All or specific badge |
+
+### Utility
+
+| Function | Description |
+|----------|-------------|
+| `screenshot()` | Returns PNG Buffer |
+| `wait(seconds)` | Wait N seconds, returns form state |
+| `getPage()` | Raw Playwright Page for advanced scripting |
+
+## Key patterns
+
+### Fill fields
 
 ```js
-// Добавить строку в "Товары" и заполнить
-const result = await browser.fillTableRow(
-  { 'Количество': '5', 'Цена': '200' },
-  { tab: 'Товары', add: true }
+await fillFields({
+  'Организация': 'Конфетпром',      // reference — auto type-ahead
+  'Сумма': '5000',                    // plain text — clipboard paste
+  'Оплачено': 'true',                // checkbox — "true"/"false"/"да"/"нет"
+  'Вид операции': 'Оплата поставщику' // radio — fuzzy label match
+});
+// Returns: { filled: [{ field, ok, value, method }], form: {...} }
+```
+
+### Fill table row
+
+```js
+await fillTableRow(
+  { 'Номенклатура': 'Бумага', 'Количество': '10', 'Цена': '100' },
+  { tab: 'Товары', add: true }  // add:true = new row
 );
-// result.filled: [{ field, cell, ok, method }]
+// Edit existing: { row: 0 } instead of { add: true }
 ```
 
-**Как работает:**
-- `add: true` нажимает "Добавить" → 1С входит в edit mode на первой ячейке
-- Tab-цикл: читает focused input → fuzzy match имени → paste + commit → Tab → следующая
-- Fuzzy match: "Количество" → "ТоварыКоличество" (exact → suffix → includes)
-- Ссылочные поля: paste → EDD (autocomplete) → click match или selection form
-- После последнего нужного поля — остановка (без лишнего Tab, чтобы не создать пустую строку)
+- Tab-based sequential navigation — field order set by 1C form config
+- Fuzzy cell match: "Количество" matches "ТоварыКоличество"
+- Reference cells auto-detected by autocomplete popup
 
-**Ограничения:**
-- Пока только навигация вперёд (Tab). Shift+Tab работает в 1С, но ещё не реализован
-- Порядок Tab определён конфигурацией формы 1С
-- Escape из пустой строки удаляет её
-
-### Выбор из справочника
-
-`selectValue("Организация", "Конфетпром")` — составная операция с тремя сценариями:
-
-**A) Dropdown-совпадение** — DLB → dropdown (EDD) → совпадение найдено → dispatchEvent click → готово
-**B) "Показать все"** — DLB → dropdown → совпадения нет, но есть "Показать все" → клик → форма выбора → поиск → выбор
-**C) F4 fallback** — DLB → dropdown → ни совпадения, ни "Показать все" → Escape → F4 → форма выбора → поиск → выбор
-
-В форме выбора: clipboard paste в поле поиска → Enter → ожидание грида → двойной клик по лучшему совпадению.
-
-Если не сработало — fallback через ручные шаги: `clickElement` → `getFormState` → `readTable`.
-
-## Шаблон скрипта
+### Filter
 
 ```js
-import * as browser from './src/browser.mjs';
-import { writeFileSync } from 'fs';
-
-const url = process.argv[2] || 'http://localhost:8081/bpdemo';
-
-try {
-  // 1. Подключение
-  const state = await browser.connect(url);
-  console.log('Sections:', state.sections?.map(s => s.name).join(', '));
-
-  // 2. Навигация
-  await browser.navigateSection('Банк и касса');
-
-  // 3. Открыть команду
-  const list = await browser.openCommand('Платежные поручения');
-  console.log('Form:', list.form, '| Buttons:', list.buttons?.map(b => b.name));
-
-  // 4. Действия...
-  const doc = await browser.clickElement('Создать');
-  console.log('Fields:', doc.fields?.map(f => `${f.label||f.name}: "${f.value}"`));
-
-  // 5. Скриншот
-  const png = await browser.screenshot();
-  writeFileSync('result.png', png);
-  console.log('Screenshot saved: result.png');
-
-} catch (e) {
-  console.error('ERROR:', e.message);
-  // Скриншот при ошибке
-  try {
-    const png = await browser.screenshot();
-    writeFileSync('error.png', png);
-    console.error('Error screenshot: error.png');
-  } catch {}
-} finally {
-  await browser.disconnect();
-}
+await filterList('КП00-000018');                         // simple — all columns
+await filterList('Мишка', { field: 'Наименование' });    // advanced — specific column
+await filterList('Мишка', { field: 'Наименование', exact: true }); // exact match
+await unfilterList();                                     // clear all
+await unfilterList({ field: 'Наименование' });           // clear specific badge
 ```
 
-## Важные заметки
+### Submenu navigation
 
-- **Headed mode обязателен** — 1С не работает в headless Chromium
-- **disconnect() в finally** — ВСЕГДА! Иначе лицензия зависнет на 20 минут
-- **Fuzzy match** — все функции поиска по имени используют нечёткий поиск (exact → includes)
-- **Время загрузки** — 1С грузится 30–60 секунд при `connect()`
-- **Clipboard paste** — все поля (обычные и ссылочные) заполняются через clipboard paste (Ctrl+V) — `page.fill()` не вызывает 1С OnChange и зависимые поля не пересчитываются
-- **Ссылочные поля** — `fillFields` определяет ссылочные поля (по кнопке DLB) и использует type-ahead (paste → Tab → авторезолв/popup). Для явного выбора через DLB-кнопку используй `selectValue`
-- **Чекбоксы** — заполнять через `fillFields({field: "true"})` или `fillFields({field: "да"})`
-- **Ошибки 1С** — если в ответе есть `errorModal`, значит 1С показала ошибку
+```js
+const r = await clickElement('Ещё');
+// r.submenu = ['Расширенный поиск', 'Настройки', ...]
+await clickElement('Расширенный поиск'); // click submenu item
+```
+
+## Response format (exec)
+
+Success:
+```json
+{ "ok": true, "output": "...console.log...", "elapsed": 3.2 }
+```
+
+Error (with auto-screenshot):
+```json
+{ "ok": false, "error": "Element not found", "output": "...", "screenshot": "error-shot.png", "elapsed": 1.5 }
+```
+
+## Script template
+
+```js
+// Navigate to section and open list
+await navigateSection('Банк и касса');
+const list = await openCommand('Платежные поручения');
+console.log('Buttons:', list.buttons?.map(b => b.name));
+
+// Create new document
+const doc = await clickElement('Создать');
+console.log('Fields:', doc.fields?.map(f => `${f.label||f.name}: "${f.value}"`));
+
+// Fill and save
+await fillFields({ 'Организация': 'Конфетпром', 'Сумма': '5000' });
+await clickElement('Провести и закрыть');
+
+// Screenshot
+const png = await screenshot();
+writeFileSync('result.png', png);
+```
+
+## Important
+
+- **Headed mode** — 1C requires visible browser, no headless
+- **1C loads 30-60s** on initial connect (wait is built into `start`)
+- **Fuzzy match** — all name lookups use fuzzy search (exact > includes)
+- **errorModal** — if response contains `errorModal`, 1C showed an error dialog
+- **Clipboard paste** — all fields filled via Ctrl+V (triggers 1C events properly)
+- **Stdin pipe for Cyrillic** — use `cat <<'SCRIPT' | node src/run.mjs exec -` to avoid bash escaping
