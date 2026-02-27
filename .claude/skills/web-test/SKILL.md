@@ -166,11 +166,11 @@ Single `clickElement(text)` only selects the row. To open — always use `{dblcl
 
 ### Hierarchical lists (catalogs)
 
-For hierarchical catalogs (Контрагенты, Номенклатура, Сотрудники, etc.) use simple
-search — it works correctly and flattens the view:
+Both simple and advanced search work on hierarchical catalogs (Контрагенты, Номенклатура, etc.):
 
 ```js
-await filterList('Конфетпром');  // simple search — works on hierarchical lists
+await filterList('Конфетпром');  // simple search — flattens hierarchical view
+await filterList('Конфетпром', { field: 'Наименование' });  // advanced — specific column
 await clickElement('Конфетпром ООО', { dblclick: true });  // open found item
 await closeForm();               // close item
 await unfilterList();             // restore hierarchical view
