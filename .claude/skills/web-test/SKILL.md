@@ -29,8 +29,9 @@ Runner path: `C:\WS\tasks\1c-web-client-mcp\src\run.mjs`
 ### Interactive mode (step-by-step)
 
 ```bash
-# 1. Start browser session (stays alive in background)
-node src/run.mjs start <url> &
+# 1. Start browser session — blocks, prints JSON when ready
+#    Use run_in_background=true (Bash tool), then wait for "Browser ready"
+node src/run.mjs start <url>
 
 # 2. Execute scripts — each returns JSON with results
 cat <<'SCRIPT' | node src/run.mjs exec -
@@ -44,17 +45,21 @@ SCRIPT
 # 4. Screenshot anytime
 node src/run.mjs shot result.png
 
-# 5. Stop when done (logout + close browser)
+# 5. Check session is alive
+node src/run.mjs status
+
+# 6. Stop when done (logout + close browser)
 node src/run.mjs stop
 ```
+
+`start` blocks forever (keeps browser alive). Run it in background, then use `exec`/`shot`/`stop` from other commands.
 
 ### Batch mode (full scenario in a file)
 
 Write `.mjs` script, run via exec:
 
 ```bash
-node src/run.mjs start <url> &
-# wait for "Browser ready" in output
+node src/run.mjs start <url>   # in background
 node src/run.mjs exec test-scenario.mjs
 node src/run.mjs stop
 ```
@@ -94,11 +99,12 @@ In `exec` sandbox, all browser.mjs functions are available as globals — no `im
 
 | Function | Description |
 |----------|-------------|
-| `clickElement(text)` | Click button/link/tab (fuzzy). If returns `submenu[]` — click again with item name |
+| `clickElement(text, {dblclick?})` | Click button/link/tab (fuzzy). `{dblclick:true}` to open items from lists. If returns `submenu[]` — click again with item name |
 | `fillFields({name: value})` | Fill form fields (fuzzy by name or label). Auto-detects checkboxes, radio, reference fields |
 | `selectValue(field, search)` | Select from reference field via dropdown/selection form |
 | `fillTableRow(fields, opts)` | Fill table row cells via Tab navigation. See below |
 | `deleteTableRow(row, {tab?})` | Delete row by 0-based index |
+| `closeForm()` | Close current form/dialog via Escape. Returns confirmation if unsaved changes |
 | `filterList(text, opts)` | Filter list. Simple (text only) or advanced (text + field). See below |
 | `unfilterList({field?})` | Clear filters. All or specific badge |
 
@@ -147,6 +153,40 @@ await filterList('Мишка', { field: 'Наименование', exact: true 
 await unfilterList();                                     // clear all
 await unfilterList({ field: 'Наименование' });           // clear specific badge
 ```
+
+### Open item from list
+
+```js
+// Double-click to open a document/catalog item from a list
+await clickElement('0000-000227', { dblclick: true });
+// Returns the opened form state (fields, table, buttons)
+```
+
+Single `clickElement(text)` only selects the row. To open — always use `{dblclick: true}`.
+
+### Hierarchical lists (catalogs)
+
+Simple search (`filterList('text')`) does NOT work for hierarchical catalogs — it shows
+groups instead of filtering elements. For Контрагенты, Номенклатура, Сотрудники, etc.
+always use advanced search with a specific field:
+
+```js
+await filterList('Конфетпром', { field: 'Наименование' });  // correct
+// NOT: await filterList('Конфетпром')  -- shows groups, not flat results
+```
+
+Hint: if `readTable()` returns rows with `_kind: 'group'`, the list is hierarchical.
+
+### Closing forms
+
+| Action | Method |
+|--------|--------|
+| Post & close document | `clickElement('Провести и закрыть')` |
+| Save & close catalog | `clickElement('Записать и закрыть')` |
+| Close without saving | `closeForm()` (Escape) or `clickElement('Закрыть')` |
+| Confirmation dialog | Response has `confirmation` field — call `clickElement('Да'/'Нет')` |
+
+`closeForm()` is preferred over `clickElement('×')` — close buttons on tabs are ambiguous.
 
 ### Submenu navigation
 
