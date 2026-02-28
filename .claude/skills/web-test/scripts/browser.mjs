@@ -340,14 +340,50 @@ export async function switchTab(name) {
   return await getFormState();
 }
 
+// English → Russian metadata type mapping for e1cib navigation links
+const E1CIB_TYPE_MAP = {
+  'catalog': 'Справочник', 'catalogs': 'Справочник',
+  'document': 'Документ', 'documents': 'Документ',
+  'commonmodule': 'ОбщийМодуль',
+  'enum': 'Перечисление', 'enums': 'Перечисление',
+  'dataprocessor': 'Обработка', 'dataprocessors': 'Обработка',
+  'report': 'Отчет', 'reports': 'Отчет',
+  'accumulationregister': 'РегистрНакопления',
+  'informationregister': 'РегистрСведений',
+  'accountingregister': 'РегистрБухгалтерии',
+  'calculationregister': 'РегистрРасчета',
+  'chartofaccounts': 'ПланСчетов',
+  'chartofcharacteristictypes': 'ПланВидовХарактеристик',
+  'chartofcalculationtypes': 'ПланВидовРасчета',
+  'businessprocess': 'БизнесПроцесс',
+  'task': 'Задача',
+  'exchangeplan': 'ПланОбмена',
+  'constant': 'Константа',
+};
+
+function normalizeE1cibUrl(url) {
+  // Already a full e1cib link
+  if (url.startsWith('e1cib/')) return url;
+  // "ТипОбъекта.Имя" or "EnglishType.Имя" — prepend e1cib/list/ and translate type if needed
+  const dot = url.indexOf('.');
+  if (dot > 0) {
+    const typePart = url.substring(0, dot);
+    const namePart = url.substring(dot + 1);
+    const ruType = E1CIB_TYPE_MAP[typePart.toLowerCase()] || typePart;
+    return `e1cib/list/${ruType}.${namePart}`;
+  }
+  return `e1cib/list/${url}`;
+}
+
 /** Navigate to a 1C navigation link via Shift+F11 dialog. Returns new form state. */
 export async function navigateLink(url) {
   ensureConnected();
   await dismissPendingErrors();
+  const link = normalizeE1cibUrl(url);
   const formBefore = await page.evaluate(detectFormScript());
 
   // Copy link to clipboard, press Shift+F11 (opens "Go to link" dialog with clipboard content)
-  await page.evaluate(`navigator.clipboard.writeText(${JSON.stringify(url)})`);
+  await page.evaluate(`navigator.clipboard.writeText(${JSON.stringify(link)})`);
   await page.keyboard.press('Shift+F11');
   await waitForStable();
 

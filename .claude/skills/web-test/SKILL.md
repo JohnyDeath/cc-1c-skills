@@ -218,13 +218,17 @@ Hint: if `readTable()` returns `hierarchical: true`, the list has groups.
 ### Navigation links
 
 ```js
-// Open any form directly by 1C navigation link (e1cib/...)
+// Full e1cib link
 await navigateLink('e1cib/list/РегистрНакопления.ЗаказыКлиентов');
-await navigateLink('e1cib/list/Документ.ЗаказКлиента');
-await navigateLink('e1cib/list/Справочник.Контрагенты');
+// Short form — auto-prepends e1cib/list/
+await navigateLink('Документ.ЗаказКлиента');
+// English type names — auto-translated to Russian
+await navigateLink('AccumulationRegister.ЗаказыКлиентов');
+await navigateLink('Catalog.Контрагенты');
 ```
 
 Bypasses section/command navigation. Useful for registers, journals, and any form with a known path.
+Auto-normalizes: `e1cib/list/` prefix + English→Russian type translation.
 
 ### Submenu navigation
 
