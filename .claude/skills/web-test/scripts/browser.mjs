@@ -992,6 +992,11 @@ export async function fillFields(fields) {
       continue;
     }
     try {
+      // Auto-enable DCS checkbox if resolved via label
+      if (r.dcsCheckbox && !r.dcsCheckbox.checked) {
+        await page.click(`[id="${r.dcsCheckbox.inputId}"]`);
+        await waitForStable();
+      }
       const selector = `[id="${r.inputId}"]`;
       if (r.isCheckbox) {
         // Checkbox: compare desired with current, toggle if mismatch
@@ -1324,6 +1329,14 @@ export async function selectValue(fieldName, searchText) {
     btn = await page.evaluate(findFieldButtonScript(formNum, fieldName, 'CB'));
   }
   if (btn?.error) return btn;
+
+  // Auto-enable DCS checkbox if resolved via label
+  if (btn.dcsCheckbox) {
+    const cbSel = `[id="${btn.dcsCheckbox.inputId}"]`;
+    const isChecked = await page.$eval(cbSel, el =>
+      el.classList.contains('checked') || el.classList.contains('checkboxOn') || el.classList.contains('select'));
+    if (!isChecked) { await page.click(cbSel); await waitForStable(); }
+  }
 
   // Helper: detect selection form (form number > formNum)
   async function detectSelectionForm() {

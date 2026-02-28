@@ -234,6 +234,38 @@ const READ_FORM_FN = `function readForm(p) {
   if (formTabs.length) result.tabs = formTabs;
   if (texts.length) result.texts = texts;
   if (hyperlinks.length) result.hyperlinks = hyperlinks;
+
+  // Group DCS report settings into readable format
+  if (result.fields) {
+    const dcsRe = /^(.+Элемент(\\d+))(Использование|Значение|ВидСравнения)$/;
+    const dcsGroups = {};
+    const dcsNames = new Set();
+    for (const f of result.fields) {
+      const m = f.name.match(dcsRe);
+      if (!m) continue;
+      if (!dcsGroups[m[1]]) dcsGroups[m[1]] = { _n: parseInt(m[2]) };
+      dcsGroups[m[1]][m[3]] = f;
+      dcsNames.add(f.name);
+    }
+    const dcsEntries = Object.entries(dcsGroups).sort((a, b) => a[1]._n - b[1]._n);
+    if (dcsEntries.length) {
+      result.reportSettings = dcsEntries.map(([, g]) => {
+        const cb = g['Использование'];
+        const val = g['Значение'];
+        if (!cb) return null;
+        const label = (val?.label || cb.label || cb.name).replace(/:$/, '').trim();
+        const s = { name: label, enabled: !!cb.value };
+        if (val) {
+          s.value = val.value || '';
+          if (val.actions && val.actions.length) s.actions = val.actions;
+        }
+        return s;
+      }).filter(Boolean);
+      result.fields = result.fields.filter(f => !dcsNames.has(f.name));
+      if (!result.fields.length) delete result.fields;
+    }
+  }
+
   return result;
 }`;
 
@@ -590,10 +622,42 @@ export function findFieldButtonScript(formNum, fieldName, buttonSuffix = 'DLB') 
       const label = (titleEl?.innerText?.trim() || '').replace(/\\n/g, ' ').replace(/:$/, '');
       allFields.push({ name, label });
     });
+    // Also collect checkboxes for DCS pair matching
+    const allCheckboxes = [];
+    document.querySelectorAll('[id^="' + p + '"].checkbox').forEach(el => {
+      if (el.offsetWidth === 0) return;
+      const name = el.id.replace(p, '');
+      const titleEl = document.getElementById(p + name + '#title_text');
+      const label = (titleEl?.innerText?.trim() || '').replace(/\\n/g, ' ').replace(/:$/, '');
+      allCheckboxes.push({ inputId: el.id, name, label });
+    });
+    // Build DCS pairs: checkbox label → paired value field
+    const dcsPairs = {};
+    for (const f of [...allFields, ...allCheckboxes]) {
+      const m = f.name.match(/^(.+Элемент\\d+)(Использование|Значение)$/);
+      if (!m) continue;
+      if (!dcsPairs[m[1]]) dcsPairs[m[1]] = {};
+      dcsPairs[m[1]][m[2]] = f;
+    }
     let found = allFields.find(f => f.name.toLowerCase() === target);
     if (!found) found = allFields.find(f => f.label && f.label.toLowerCase() === target);
     if (!found) found = allFields.find(f => f.name.toLowerCase().includes(target));
     if (!found) found = allFields.find(f => f.label && f.label.toLowerCase().includes(target));
+    // DCS pair: match checkbox or value label → resolve to paired value field
+    let dcsCheckbox = null;
+    if (!found) {
+      for (const pair of Object.values(dcsPairs)) {
+        const cb = pair['Использование'];
+        const val = pair['Значение'];
+        if (!cb || !val) continue;
+        const pairLabel = ((val.label || cb.label || '').replace(/:$/, '')).toLowerCase();
+        if (pairLabel && (pairLabel === target || pairLabel.includes(target) || target.includes(pairLabel))) {
+          found = val;
+          dcsCheckbox = cb;
+          break;
+        }
+      }
+    }
     if (!found) {
       return { error: 'field_not_found', available: allFields.map(f => f.label ? f.name + ' (' + f.label + ')' : f.name) };
     }
@@ -602,7 +666,9 @@ export function findFieldButtonScript(formNum, fieldName, buttonSuffix = 'DLB') 
     if (!btn || btn.offsetWidth === 0) {
       return { error: 'button_not_found', fieldName: found.name, message: suffix + ' button not visible for field ' + found.name };
     }
-    return { fieldName: found.name, buttonId: btnId, buttonType: suffix };
+    const result = { fieldName: found.name, buttonId: btnId, buttonType: suffix };
+    if (dcsCheckbox) result.dcsCheckbox = { inputId: dcsCheckbox.inputId };
+    return result;
   })()`;
 }
 
@@ -917,6 +983,15 @@ export function resolveFieldsScript(formNum, fields) {
       allFields.push({ inputId: p + groupName, name: groupName, label, isRadio: true, options });
     });
 
+    // Build DCS pairs: checkbox label → paired value field
+    const dcsPairs = {};
+    for (const f of allFields) {
+      const m = f.name.match(/^(.+Элемент\\d+)(Использование|Значение)$/);
+      if (!m) continue;
+      if (!dcsPairs[m[1]]) dcsPairs[m[1]] = {};
+      dcsPairs[m[1]][m[2]] = f;
+    }
+
     for (const fieldName of fieldNames) {
       const target = fieldName.toLowerCase().replace(/\\n/g, ' ').replace(/:$/, '');
       // Fuzzy: exact name -> exact label -> includes name -> includes label
@@ -924,12 +999,30 @@ export function resolveFieldsScript(formNum, fields) {
       if (!found) found = allFields.find(f => f.label && f.label.toLowerCase() === target);
       if (!found) found = allFields.find(f => f.name.toLowerCase().includes(target));
       if (!found) found = allFields.find(f => f.label && f.label.toLowerCase().includes(target));
+      // DCS pair: match checkbox or value label → resolve to paired value field
+      if (!found) {
+        for (const pair of Object.values(dcsPairs)) {
+          const cb = pair['Использование'];
+          const val = pair['Значение'];
+          if (!cb || !val) continue;
+          const pairLabel = ((val.label || cb.label || '').replace(/:$/, '')).toLowerCase();
+          if (pairLabel && (pairLabel === target || pairLabel.includes(target) || target.includes(pairLabel))) {
+            found = val;
+            found._dcsCheckbox = cb;
+            break;
+          }
+        }
+      }
 
       if (found) {
         const entry = { field: fieldName, inputId: found.inputId, name: found.name, label: found.label };
         if (found.isCheckbox) { entry.isCheckbox = true; entry.checked = found.checked; }
         if (found.isRadio) { entry.isRadio = true; entry.options = found.options; }
         if (found.hasSelect) entry.hasSelect = true;
+        if (found._dcsCheckbox) {
+          entry.dcsCheckbox = { inputId: found._dcsCheckbox.inputId, checked: found._dcsCheckbox.checked };
+          delete found._dcsCheckbox;
+        }
         results.push(entry);
       } else {
         const available = allFields.map(f => f.label ? f.name + ' (' + f.label + ')' : f.name);
