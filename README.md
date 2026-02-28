@@ -57,14 +57,16 @@ python scripts/switch.py --undo cursor             # удалить копию
 
 Поддерживаемые платформы:
 
-| Платформа | Целевой каталог | Слеш-команды |
-|-----------|----------------|--------------|
-| Claude Code | `.claude/skills/` | `/epf-init`, `/mxl-compile`, ... |
-| Cursor | `.cursor/skills/` | через меню команд |
-| GitHub Copilot | `.github/skills/` | `/skills` в чате |
-| OpenAI Codex | `.codex/skills/` | `$skill-name` |
-| Gemini CLI | `.gemini/skills/` | автоактивация |
-| OpenCode | `.opencode/skills/` | через skill tool |
+| Платформа | Целевой каталог | Автоактивация | Слеш-команды |
+|-----------|----------------|:---:|--------------|
+| Claude Code | `.claude/skills/` | да | `/epf-init`, `/mxl-compile`, ... |
+| Cursor | `.cursor/skills/` | да | через меню команд |
+| GitHub Copilot | `.github/skills/` | да | `/skills` в чате |
+| OpenAI Codex | `.codex/skills/` | да | `$skill-name` |
+| Gemini CLI | `.gemini/skills/` | да | нет |
+| OpenCode | `.opencode/skills/` | да | через skill tool |
+
+Автоактивация — основной режим: просто опишите задачу своими словами, ассистент сам подберёт нужный навык по `description` в SKILL.md. Слеш-команды — для точного контроля, когда нужно вызвать конкретный навык.
 
 ### Переключение рантайма (PowerShell ↔ Python)
 
