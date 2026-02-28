@@ -3,7 +3,7 @@
 # Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 """
 Копирует навыки из .claude/skills/ на другие AI-платформы (Cursor, Codex, Copilot,
-Gemini CLI, OpenCode) с перезаписью путей, и/или переключает рантайм (PowerShell ↔ Python).
+Kiro, Gemini CLI, OpenCode) с перезаписью путей, и/или переключает рантайм (PowerShell ↔ Python).
 
 Использование:
   python scripts/switch.py                           # интерактивный режим
@@ -28,6 +28,7 @@ PLATFORMS = {
     'cursor':      '.cursor/skills',
     'copilot':     '.github/skills',
     'gemini':      '.gemini/skills',
+    'kiro':        '.kiro/skills',
     'opencode':    '.opencode/skills',
 }
 
@@ -290,11 +291,12 @@ def interactive_mode():
         ("Claude Code",    ".claude/skills/"),
         ("Cursor",         ".cursor/skills/"),
         ("GitHub Copilot", ".github/skills/"),
+        ("Kiro",           ".kiro/skills/"),
         ("OpenAI Codex",   ".codex/skills/"),
         ("Gemini CLI",     ".gemini/skills/"),
         ("OpenCode",       ".opencode/skills/"),
     ]
-    platform_keys = ['claude-code', 'cursor', 'copilot', 'codex', 'gemini', 'opencode']
+    platform_keys = ['claude-code', 'cursor', 'copilot', 'kiro', 'codex', 'gemini', 'opencode']
 
     choice = ask_choice("Для какой платформы настроить навыки?", platform_options)
     platform = platform_keys[choice - 1]
