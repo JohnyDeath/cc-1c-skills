@@ -113,6 +113,29 @@ async function executeScript(code) {
     exports.writeFileSync = writeFileSync;
     exports.readFileSync = readFileSync;
 
+    // Wrap action functions to auto-detect 1C errors (modal, balloon)
+    // and stop execution immediately with diagnostic info
+    const ACTION_FNS = [
+      'clickElement', 'fillFields', 'selectValue', 'fillTableRow',
+      'deleteTableRow', 'openCommand', 'navigateSection', 'closeForm',
+      'filterList', 'unfilterList'
+    ];
+    for (const name of ACTION_FNS) {
+      if (typeof exports[name] !== 'function') continue;
+      const orig = exports[name];
+      exports[name] = async (...args) => {
+        const result = await orig(...args);
+        const errors = result?.errors;
+        if (errors?.modal || errors?.balloon) {
+          const msg = errors.modal?.message || errors.balloon?.message || 'Unknown 1C error';
+          const err = new Error(msg);
+          err.onecError = { step: name, args, errors, formState: result };
+          throw err;
+        }
+        return result;
+      };
+    }
+
     const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
     const fn = new AsyncFunction(...Object.keys(exports), code);
     await fn(...Object.values(exports));
@@ -124,7 +147,7 @@ async function executeScript(code) {
     console.log = origLog;
     console.error = origErr;
 
-    // Error screenshot — save with absolute path so model can view it
+    // Error screenshot
     let shotFile;
     try {
       const png = await browser.screenshot();
@@ -132,7 +155,17 @@ async function executeScript(code) {
       writeFileSync(shotFile, png);
     } catch {}
 
-    return { ok: false, error: e.message, output: output.join('\n'), screenshot: shotFile, elapsed: elapsed(t0) };
+    const result = { ok: false, error: e.message, output: output.join('\n'), screenshot: shotFile, elapsed: elapsed(t0) };
+
+    // Enrich with 1C error context if available
+    if (e.onecError) {
+      result.step = e.onecError.step;
+      result.stepArgs = e.onecError.args;
+      result.onecErrors = e.onecError.errors;
+      result.formState = e.onecError.formState;
+    }
+
+    return result;
   }
 }
 
