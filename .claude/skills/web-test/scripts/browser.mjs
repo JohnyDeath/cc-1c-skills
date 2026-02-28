@@ -1015,8 +1015,15 @@ export async function clickElement(text, { dblclick } = {}) {
   return state;
 }
 
-/** Close the current form/dialog via Escape. Returns new form state. If confirmation dialog appears — returns it in `confirmation` field. */
-export async function closeForm() {
+/**
+ * Close the current form/dialog via Escape.
+ * @param {Object} [opts]
+ * @param {boolean} [opts.save] - Handle "Save changes?" confirmation automatically:
+ *   true  → click "Да" (save and close)
+ *   false → click "Нет" (discard and close)
+ *   undefined → return confirmation as hint for caller to decide
+ */
+export async function closeForm({ save } = {}) {
   ensureConnected();
   await dismissPendingErrors();
   await page.keyboard.press('Escape');
@@ -1024,6 +1031,20 @@ export async function closeForm() {
   const state = await getFormState();
   const err = await checkForErrors();
   if (err?.confirmation) {
+    if (save === true || save === false) {
+      const label = save ? 'Да' : 'Нет';
+      const btnSel = `#form${err.confirmation.formNum}_container a.press.pressButton`;
+      const btns = await page.$$(btnSel);
+      for (const b of btns) {
+        const txt = (await b.textContent()).trim();
+        if (txt === label) {
+          await b.click({ force: true });
+          await waitForStable();
+          break;
+        }
+      }
+      return await getFormState();
+    }
     state.confirmation = err.confirmation;
     state.hint = 'Confirmation dialog shown. Click "Да" to confirm or "Нет" to cancel';
   }
