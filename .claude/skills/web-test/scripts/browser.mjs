@@ -1010,8 +1010,11 @@ export async function selectValue(fieldName, searchText) {
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
-  // 1. Find DLB button
-  const btn = await page.evaluate(findFieldButtonScript(formNum, fieldName, 'DLB'));
+  // 1. Find DLB button (fallback to CB — ERP uses Choose Button instead of DLB for some fields)
+  let btn = await page.evaluate(findFieldButtonScript(formNum, fieldName, 'DLB'));
+  if (btn?.error === 'button_not_found') {
+    btn = await page.evaluate(findFieldButtonScript(formNum, fieldName, 'CB'));
+  }
   if (btn?.error) return btn;
 
   // Helper: detect selection form (form number > formNum)
@@ -1320,19 +1323,37 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
   const results = [];
   const MAX_ITER = 40;
   let prevCellId = null;
+  let nonInputCount = 0;
+  let firstCellId = null;
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
-    // Read focused element
+    // Read focused element (INPUT or TEXTAREA inside grid = editable cell)
     const cell = await page.evaluate(`(() => {
       const f = document.activeElement;
-      if (!f || f.tagName !== 'INPUT') return { tag: f?.tagName || 'none' };
-      return {
-        tag: 'INPUT', id: f.id,
-        fullName: f.id.replace(/^form\\d+_/, '').replace(/_i\\d+$/, '')
-      };
+      if (!f) return { tag: 'none' };
+      if (f.tagName === 'INPUT' || f.tagName === 'TEXTAREA') {
+        const inGrid = (() => { let n = f; while (n) { if (n.classList?.contains('grid') || n.classList?.contains('gridContent')) return true; n = n.parentElement; } return false; })();
+        if (inGrid) return {
+          tag: 'INPUT', id: f.id,
+          fullName: f.id.replace(/^form\\d+_/, '').replace(/_i\\d+$/, '')
+        };
+      }
+      return { tag: f.tagName || 'none' };
     })()`);
 
-    if (cell.tag !== 'INPUT') break; // exited edit mode
+    if (cell.tag !== 'INPUT') {
+      // Not in an editable grid cell — Tab past (ERP has DIV focus between cells)
+      nonInputCount++;
+      if (nonInputCount > 3) break; // truly exited edit mode
+      await page.keyboard.press('Tab');
+      await page.waitForTimeout(300);
+      continue;
+    }
+    nonInputCount = 0;
+
+    // Track first cell to detect wrap-around (Tab looped back to row start)
+    if (firstCellId === null) firstCellId = cell.id;
+    else if (cell.id === firstCellId) break; // wrapped around — all cells visited
 
     // Stuck detection: same cell twice in a row → force Tab
     if (cell.id === prevCellId) {
