@@ -6,11 +6,12 @@
  * `exec`, `shot`, `stop` send requests to the running server.
  *
  * Usage:
- *   node src/run.mjs start <url>    — launch browser, connect to 1C, serve requests
- *   node src/run.mjs exec <file|->  — run script against existing session
- *   node src/run.mjs shot [file]    — take screenshot
- *   node src/run.mjs stop           — logout + close browser
- *   node src/run.mjs status         — check session
+ *   node src/run.mjs start <url>            — launch browser, connect to 1C, serve requests
+ *   node src/run.mjs run <url> <file|->     — autonomous: connect, execute script, disconnect
+ *   node src/run.mjs exec <file|->          — run script against existing session
+ *   node src/run.mjs shot [file]            — take screenshot
+ *   node src/run.mjs stop                   — logout + close browser
+ *   node src/run.mjs status                 — check session
  */
 import http from 'http';
 import * as browser from './browser.mjs';
@@ -25,6 +26,7 @@ const [,, cmd, ...args] = process.argv;
 
 switch (cmd) {
   case 'start':  await cmdStart(args[0]); break;
+  case 'run':    await cmdRun(args[0], args[1]); break;
   case 'exec':   await cmdExec(args[0]); break;
   case 'shot':   await cmdShot(args[0]); break;
   case 'stop':   await cmdStop(); break;
@@ -132,6 +134,26 @@ async function executeScript(code) {
 
     return { ok: false, error: e.message, output: output.join('\n'), screenshot: shotFile, elapsed: elapsed(t0) };
   }
+}
+
+
+// ============================================================
+// run: autonomous connect → execute → disconnect (no server)
+// ============================================================
+
+async function cmdRun(url, fileOrDash) {
+  if (!url || !fileOrDash) die('Usage: node src/run.mjs run <url> <file|->');
+
+  const code = fileOrDash === '-'
+    ? await readStdin()
+    : readFileSync(resolve(fileOrDash), 'utf-8');
+
+  await browser.connect(url);
+  const result = await executeScript(code);
+  await browser.disconnect();
+
+  out(result);
+  if (!result.ok) process.exit(1);
 }
 
 
@@ -256,9 +278,10 @@ function usage() {
   die(`Usage: node src/run.mjs <command> [args]
 
 Commands:
-  start <url>    Launch browser and connect to 1C web client
-  exec <file|->  Execute script (file path or - for stdin)
-  shot [file]    Take screenshot (default: shot.png)
-  stop           Logout and close browser
-  status         Check session status`);
+  start <url>            Launch browser and connect to 1C web client
+  run <url> <file|->     Autonomous: connect, execute script, disconnect
+  exec <file|->          Execute script (file path or - for stdin)
+  shot [file]            Take screenshot (default: shot.png)
+  stop                   Logout and close browser
+  status                 Check session status`);
 }
