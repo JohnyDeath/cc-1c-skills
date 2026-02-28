@@ -361,16 +361,20 @@ const E1CIB_TYPE_MAP = {
   'constant': 'Константа',
 };
 
+// Types that open via e1cib/app/ (reports and data processors have their own app forms)
+const E1CIB_APP_TYPES = new Set(['Отчет', 'Обработка']);
+
 function normalizeE1cibUrl(url) {
   // Already a full e1cib link
   if (url.startsWith('e1cib/')) return url;
-  // "ТипОбъекта.Имя" or "EnglishType.Имя" — prepend e1cib/list/ and translate type if needed
+  // "ТипОбъекта.Имя" or "EnglishType.Имя" — translate type, pick list/ or app/ prefix
   const dot = url.indexOf('.');
   if (dot > 0) {
     const typePart = url.substring(0, dot);
     const namePart = url.substring(dot + 1);
     const ruType = E1CIB_TYPE_MAP[typePart.toLowerCase()] || typePart;
-    return `e1cib/list/${ruType}.${namePart}`;
+    const prefix = E1CIB_APP_TYPES.has(ruType) ? 'e1cib/app' : 'e1cib/list';
+    return `${prefix}/${ruType}.${namePart}`;
   }
   return `e1cib/list/${url}`;
 }
