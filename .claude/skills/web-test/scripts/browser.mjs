@@ -348,15 +348,14 @@ export async function readTable({ maxRows = 20, offset = 0 } = {}) {
  * @returns {{ field, ok, method }} or {{ field, error, message }}
  */
 async function pickFromSelectionForm(selFormNum, fieldName, text, origFormNum) {
-  // 1. Find search input in the selection form
+  // 1. Find search input in the selection form (strict — only named search fields,
+  //    do NOT fall back to first input — it may be a filter field like ТипСоглашения)
   const searchInputId = await page.evaluate(`(() => {
     const p = 'form${selFormNum}_';
     const inputs = [...document.querySelectorAll('input.editInput[id^="' + p + '"]')].filter(el => el.offsetWidth > 0);
-    // Prefer field with "search"/"поиск" in its ID
-    let searchInput = inputs.find(el => /поиск|search|строкапоиска|find/i.test(el.id));
-    if (!searchInput && inputs.length > 0) searchInput = inputs[0];
+    const searchInput = inputs.find(el => /поиск|search|строкапоиска|SearchString|find/i.test(el.id));
     return searchInput ? searchInput.id : null;
-  })()`);
+  })()`)
 
   // 2. Fill search field via clipboard paste (more reliable than page.fill for 1C)
   if (searchInputId && text) {
