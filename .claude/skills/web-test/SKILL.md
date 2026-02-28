@@ -39,48 +39,50 @@ Use `RUN` shorthand in all commands:
 RUN=".claude/skills/web-test/scripts/run.mjs"
 ```
 
-### Interactive mode (step-by-step)
+### Autonomous mode (preferred for complete scenarios)
+
+Single command — opens browser, runs script, closes browser, exits:
 
 ```bash
-# 1. Start browser session — blocks, prints JSON when ready
-#    Use run_in_background=true (Bash tool), then wait for "Browser ready"
+node $RUN run <url> test-scenario.js
+# or pipe from stdin:
+cat <<'SCRIPT' | node $RUN run <url> -
+await navigateSection('Продажи');
+await openCommand('Заказы клиентов');
+await clickElement('Создать');
+await fillFields({ 'Клиент': 'Альфа' });
+await clickElement('Провести и закрыть');
+SCRIPT
+```
+
+Process exits when done. No session files, no HTTP server. Ideal for subagents and CI.
+
+### Interactive mode (step-by-step development)
+
+```bash
+# 1. Start browser session (run_in_background=true, prints JSON when ready)
 node $RUN start <url>
 
-# 2. Execute scripts — each returns JSON with results
+# 2. Execute scripts against running session
 cat <<'SCRIPT' | node $RUN exec -
-await navigateSection('Покупки');
-const form = await openCommand('Авансовые отчеты');
+const form = await getFormState();
 console.log(JSON.stringify(form.fields, null, 2));
 SCRIPT
 
-# 3. React to output, run more scripts...
-
-# 4. Screenshot anytime
+# 3. Screenshot anytime
 node $RUN shot result.png
 
-# 5. Check session is alive
-node $RUN status
-
-# 6. Stop when done (logout + close browser)
+# 4. Stop when done (logout + close browser)
 node $RUN stop
 ```
 
-`start` blocks forever (keeps browser alive). Run it in background, then use `exec`/`shot`/`stop` from other commands.
-
-### Batch mode (full scenario in a file)
-
-Write `.mjs` script, run via exec:
-
-```bash
-node $RUN start <url>   # in background
-node $RUN exec test-scenario.mjs
-node $RUN stop
-```
+`start` outputs "Browser ready" JSON and keeps running (HTTP server). Use `exec`/`shot`/`stop` from other commands.
 
 ## URL
 
-Read `.v8-project.json` from project root. If `webUrl` is set — use it.
-Default: `http://localhost:8081/bpdemo`
+Read `.v8-project.json` from project root. Each database has `id` and optional `webUrl`.
+Construct URL as `http://localhost:8081/<id>` or use `webUrl` if set.
+Use `/web-publish` skill first if the database is not published yet.
 
 ## Writing exec scripts
 
@@ -236,21 +238,19 @@ Error (with auto-screenshot):
 ```js
 // Navigate to section and open list
 await navigateSection('Банк и касса');
-const list = await openCommand('Платежные поручения');
-console.log('Buttons:', list.buttons?.map(b => b.name));
+await openCommand('Платежные поручения');
 
 // Create new document
-const doc = await clickElement('Создать');
-console.log('Fields:', doc.fields?.map(f => `${f.label||f.name}: "${f.value}"`));
+await clickElement('Создать');
 
 // Fill and save
 await fillFields({ 'Организация': 'Конфетпром', 'Сумма': '5000' });
 await clickElement('Провести и закрыть');
 
-// Screenshot
-const png = await screenshot();
-writeFileSync('result.png', png);
+console.log('done');
 ```
+
+Run: `node $RUN run http://localhost:8081/bpdemo script.js`
 
 ## Important
 
