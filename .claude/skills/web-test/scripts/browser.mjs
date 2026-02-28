@@ -237,6 +237,29 @@ async function checkForErrors() {
   return await page.evaluate(checkErrorsScript());
 }
 
+/**
+ * Dismiss pending error modal if present (single OK button dialog).
+ * Called at the start of action functions so that a leftover error modal
+ * from a previous operation doesn't block the next action.
+ * Does NOT dismiss confirmations (Да/Нет — require user decision).
+ * Returns the dismissed error object or null.
+ */
+async function dismissPendingErrors() {
+  const err = await checkForErrors();
+  if (!err?.modal) return null;
+  try {
+    // Target pressDefault within the modal's form container specifically
+    const formNum = err.modal.formNum;
+    const sel = formNum != null
+      ? `#form${formNum}_container a.press.pressDefault`
+      : 'a.press.pressDefault';
+    const btn = await page.$(sel);
+    if (btn) { await btn.click({ force: true }); await page.waitForTimeout(500); }
+  } catch { /* OK */ }
+  await waitForStable();
+  return err;
+}
+
 /** Get the raw Playwright page object (for advanced scripting in skill mode). */
 export function getPage() {
   ensureConnected();
@@ -272,6 +295,7 @@ export async function getSections() {
 /** Navigate to a section by name. Returns new state with commands. */
 export async function navigateSection(name) {
   ensureConnected();
+  await dismissPendingErrors();
   const result = await page.evaluate(navigateSectionScript(name));
   if (result?.error) return result;
 
@@ -292,6 +316,7 @@ export async function getCommands() {
 /** Open a command from function panel by name. Returns new form state. */
 export async function openCommand(name) {
   ensureConnected();
+  await dismissPendingErrors();
   const formBefore = await page.evaluate(detectFormScript());
   const result = await page.evaluate(openCommandScript(name));
   if (result?.error) return result;
@@ -488,19 +513,6 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
   const text = String(value);
   const escapedSel = selector.replace(/'/g, "\\'");
 
-  // Helper: dismiss 1C error modal if present
-  async function dismissErrors() {
-    const err = await checkForErrors();
-    if (err?.modal) {
-      try {
-        const btn = await page.$('a.press.pressDefault');
-        if (btn) { await btn.click(); await page.waitForTimeout(500); }
-      } catch { /* OK */ }
-      return err;
-    }
-    return null;
-  }
-
   // Helper: detect new forms opened above the current one
   async function detectNewForm() {
     return page.evaluate(`(() => {
@@ -543,7 +555,7 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
   }
 
   // 0. Dismiss any leftover error modal from a previous operation
-  await dismissErrors();
+  await dismissPendingErrors();
 
   // 1. Focus (handle surface/modal overlay from previous interaction)
   try {
@@ -555,7 +567,7 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
         await page.click(selector, { force: true });
       } catch (e2) {
         if (e2.message.includes('intercepts pointer events')) {
-          await dismissErrors();
+          await dismissPendingErrors();
           await page.keyboard.press('Escape');
           await page.waitForTimeout(500);
           await page.click(selector);
@@ -614,7 +626,7 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
       if (match) {
         await page.mouse.click(match.x, match.y);
         await waitForStable();
-        await dismissErrors(); // business logic errors (e.g. СПАРК) may appear async
+        await dismissPendingErrors(); // business logic errors (e.g. СПАРК) may appear async
         return { field: fieldName, ok: true, method: 'dropdown',
           value: match.name.replace(/\s*\([^)]*\)\s*$/, '') };
       }
@@ -646,7 +658,7 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
   // 5. No edd at all — press Tab to trigger direct resolve
   await page.keyboard.press('Tab');
   await waitForStable();
-  await dismissErrors();
+  await dismissPendingErrors();
 
   // 5x. Check for "not in list" cloud popup after Tab
   if (await checkNotInListCloud()) {
@@ -712,6 +724,7 @@ async function fillReferenceField(selector, fieldName, value, formNum) {
 /** Fill fields on the current form via Playwright page.fill(). Returns fill results + updated form. */
 export async function fillFields(fields) {
   ensureConnected();
+  await dismissPendingErrors();
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
@@ -779,6 +792,7 @@ export async function fillFields(fields) {
 /** Click a button/hyperlink/tab on the current form. Use {dblclick: true} to double-click (open items from lists). */
 export async function clickElement(text, { dblclick } = {}) {
   ensureConnected();
+  await dismissPendingErrors();
 
   // First check if there's a confirmation dialog — click matching button
   const pending = await checkForErrors();
@@ -1004,6 +1018,7 @@ export async function clickElement(text, { dblclick } = {}) {
 /** Close the current form/dialog via Escape. Returns new form state. If confirmation dialog appears — returns it in `confirmation` field. */
 export async function closeForm() {
   ensureConnected();
+  await dismissPendingErrors();
   await page.keyboard.press('Escape');
   await waitForStable();
   const state = await getFormState();
@@ -1024,6 +1039,7 @@ export async function closeForm() {
  */
 export async function selectValue(fieldName, searchText) {
   ensureConnected();
+  await dismissPendingErrors();
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
@@ -1244,6 +1260,7 @@ export async function selectValue(fieldName, searchText) {
  */
 export async function fillTableRow(fields, { tab, add, row } = {}) {
   ensureConnected();
+  await dismissPendingErrors();
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
@@ -1627,6 +1644,7 @@ export async function fillTableRow(fields, { tab, add, row } = {}) {
  */
 export async function deleteTableRow(row, { tab } = {}) {
   ensureConnected();
+  await dismissPendingErrors();
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
@@ -1694,6 +1712,7 @@ export async function deleteTableRow(row, { tab } = {}) {
  */
 export async function filterList(text, { field, exact } = {}) {
   ensureConnected();
+  await dismissPendingErrors();
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
@@ -1952,6 +1971,7 @@ export async function filterList(text, { field, exact } = {}) {
  */
 export async function unfilterList({ field } = {}) {
   ensureConnected();
+  await dismissPendingErrors();
   const formNum = await page.evaluate(detectFormScript());
   if (formNum === null) return { error: 'no_form' };
 
