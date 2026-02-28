@@ -104,8 +104,8 @@ In `exec` sandbox, all browser.mjs functions are available as globals — no `im
 
 | Function | Description |
 |----------|-------------|
-| `getFormState()` | Current form: fields (with `required` flag for unfilled mandatory fields), buttons, tabs, table preview, filters |
-| `readTable({maxRows, offset})` | Full table data with pagination. Default: 20 rows |
+| `getFormState()` | Current form: fields (with `required` flag for unfilled mandatory fields), buttons, tabs, table meta (columns + rowCount), filters |
+| `readTable({maxRows, offset})` | Table row data: `{ columns, rows: [{col: val}], total }`. Use this to read grid contents |
 | `getSections()` | Sections + commands of active section |
 | `getPageState()` | Sections + open tabs |
 | `getCommands()` | Commands of current section |
@@ -119,7 +119,7 @@ In `exec` sandbox, all browser.mjs functions are available as globals — no `im
 | `selectValue(field, search)` | Select from reference field via dropdown/selection form |
 | `fillTableRow(fields, opts)` | Fill table row cells via Tab navigation. See below |
 | `deleteTableRow(row, {tab?})` | Delete row by 0-based index |
-| `closeForm()` | Close current form/dialog via Escape. Returns confirmation if unsaved changes |
+| `closeForm({save})` | Close form via Escape. `save: false` auto-clicks "Нет", `save: true` auto-clicks "Да", omit — returns confirmation for caller |
 | `filterList(text, opts)` | Filter list. Simple (text only) or advanced (text + field). See below |
 | `unfilterList({field?})` | Clear filters. All or specific badge |
 
@@ -199,8 +199,9 @@ Hint: if `readTable()` returns `hierarchical: true`, the list has groups.
 |--------|--------|
 | Post & close document | `clickElement('Провести и закрыть')` |
 | Save & close catalog | `clickElement('Записать и закрыть')` |
-| Close without saving | `closeForm()` (Escape) or `clickElement('Закрыть')` |
-| Confirmation dialog | Response has `confirmation` field — call `clickElement('Да'/'Нет')` |
+| Close without saving | `closeForm({ save: false })` — auto-dismisses "save changes?" |
+| Close and save | `closeForm({ save: true })` — auto-confirms save |
+| Close (manual confirm) | `closeForm()` — returns `confirmation` field if dialog appears |
 
 `closeForm()` is preferred over `clickElement('×')` — close buttons on tabs are ambiguous.
 
