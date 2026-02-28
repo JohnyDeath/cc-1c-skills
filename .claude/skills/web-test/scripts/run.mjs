@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// web-test run v1.0 — CLI runner for 1C web client automation
+// Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 /**
  * CLI runner for 1C web client automation.
  *

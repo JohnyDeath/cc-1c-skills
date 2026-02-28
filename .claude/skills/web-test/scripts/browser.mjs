@@ -1,3 +1,5 @@
+// web-test browser v1.0 — Playwright browser management for 1C web client
+// Source: https://github.com/Nikolay-Shirokov/cc-1c-skills
 /**
  * Playwright browser management for 1C web client.
  *
