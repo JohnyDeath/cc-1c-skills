@@ -428,6 +428,63 @@ export async function readTable({ maxRows = 20, offset = 0 } = {}) {
 }
 
 /**
+ * Read report output (SpreadsheetDocumentField) rendered in iframes.
+ * 1C renders spreadsheet documents as absolutely-positioned div cells inside iframes.
+ * Each cell is a div[x] inside a row div[y], text content in <span>.
+ * Returns { headers: string[][], data: string[][] } — arrays of cell arrays.
+ */
+export async function readSpreadsheet() {
+  ensureConnected();
+  const frames = page.frames();
+  const allCells = new Map();
+
+  for (let fi = 1; fi < frames.length; fi++) {
+    try {
+      const cells = await frames[fi].evaluate(`(() => {
+        const cells = [];
+        document.querySelectorAll('div[x]').forEach(d => {
+          const span = d.querySelector('span');
+          const text = span?.textContent?.trim() || '';
+          if (!text) return;
+          const rowDiv = d.parentElement;
+          const row = rowDiv?.getAttribute('y') || rowDiv?.className?.match(/R(\\d+)/)?.[1] || null;
+          const col = d.getAttribute('x');
+          if (row != null && col != null) cells.push({ r: parseInt(row), c: parseInt(col), t: text });
+        });
+        return cells;
+      })()`);
+      for (const cell of cells) {
+        const key = `${cell.r}_${cell.c}`;
+        if (!allCells.has(key) || cell.t.length > allCells.get(key).t.length) {
+          allCells.set(key, cell);
+        }
+      }
+    } catch { /* skip inaccessible frames */ }
+  }
+
+  if (allCells.size === 0) return { error: 'no_spreadsheet', hint: 'No SpreadsheetDocument found. Report may not be generated yet.' };
+
+  // Group by row, determine max columns
+  const rowMap = new Map();
+  let maxCol = 0;
+  for (const cell of allCells.values()) {
+    if (!rowMap.has(cell.r)) rowMap.set(cell.r, new Map());
+    rowMap.get(cell.r).set(cell.c, cell.t);
+    if (cell.c > maxCol) maxCol = cell.c;
+  }
+
+  const sortedRows = [...rowMap.keys()].sort((a, b) => a - b);
+  const rows = sortedRows.map(r => {
+    const colMap = rowMap.get(r);
+    const arr = [];
+    for (let c = 0; c <= maxCol; c++) arr.push(colMap.get(c) || '');
+    return arr;
+  });
+
+  return { rows, total: rows.length };
+}
+
+/**
  * Pick a value from an opened selection form: search + dblclick matching row.
  *
  * Strategy:

@@ -107,6 +107,7 @@ In `exec` sandbox, all browser.mjs functions are available as globals — no `im
 |----------|-------------|
 | `getFormState()` | Current form: fields (with `required` flag for unfilled mandatory fields), buttons, tabs, table meta (columns + rowCount), filters |
 | `readTable({maxRows, offset})` | Table row data: `{ columns, rows: [{col: val}], total }`. Use this to read grid contents |
+| `readSpreadsheet()` | Read report output (SpreadsheetDocument): `{ rows: string[][], total }`. Use after clicking "Сформировать" |
 | `getSections()` | Sections + commands of active section |
 | `getPageState()` | Sections + open tabs |
 | `getCommands()` | Commands of current section |
