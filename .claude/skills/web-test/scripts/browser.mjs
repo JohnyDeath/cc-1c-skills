@@ -438,12 +438,35 @@ export async function readTable({ maxRows = 20, offset = 0 } = {}) {
  */
 export async function readSpreadsheet() {
   ensureConnected();
+  const formNum = await page.evaluate(detectFormScript());
+
+  // Collect iframe indices that belong to the current form's spreadsheet container
+  const iframeIndices = await page.evaluate(`(() => {
+    const prefix = 'form${formNum ?? 0}_';
+    const allIframes = [...document.querySelectorAll('iframe')];
+    const indices = [];
+    for (let i = 0; i < allIframes.length; i++) {
+      const f = allIframes[i];
+      if (f.offsetWidth < 100) continue;
+      let el = f.parentElement, found = false;
+      for (let d = 0; el && d < 30; d++, el = el.parentElement) {
+        if (el.id && el.id.startsWith(prefix)) { found = true; break; }
+      }
+      if (found) indices.push(i);
+    }
+    return indices;
+  })()`);
+
   const frames = page.frames();
   const allCells = new Map();
 
-  for (let fi = 1; fi < frames.length; fi++) {
+  // Map page iframe indices to frame objects (frame 0 = main, iframes start at 1+)
+  for (const iframeIdx of iframeIndices) {
+    // Playwright frames: frame[0] is main, frame[1..N] map to iframes in DOM order
+    const frame = frames[iframeIdx + 1];
+    if (!frame) continue;
     try {
-      const cells = await frames[fi].evaluate(`(() => {
+      const cells = await frame.evaluate(`(() => {
         const cells = [];
         document.querySelectorAll('div[x]').forEach(d => {
           const span = d.querySelector('span');
@@ -488,46 +511,62 @@ export async function readSpreadsheet() {
   const hasNumber = (row) => row.some(c => /^[\d\s\u00a0]/.test(c) && /\d/.test(c));
   const nonEmpty = (row) => row.filter(c => c !== '').length;
 
-  // 1. Find header row: row with most non-empty cells BEFORE first row with numbers
-  let headerIdx = -1;
-  let bestCount = 0;
+  // 1. Find first data row (first row with numbers)
+  let firstDataIdx = rows.length;
   for (let i = 0; i < rows.length; i++) {
-    if (hasNumber(rows[i])) break;
-    const cnt = nonEmpty(rows[i]);
-    if (cnt >= bestCount) { bestCount = cnt; headerIdx = i; }
+    if (hasNumber(rows[i])) { firstDataIdx = i; break; }
   }
 
-  if (headerIdx === -1 || bestCount < 2) return { rows, total: rows.length };
+  // 2. Find header rows: scan backwards from data, pick last row with ≥3 cells as detail header
+  let detailIdx = -1;
+  for (let i = firstDataIdx - 1; i >= 0; i--) {
+    if (nonEmpty(rows[i]) >= 3) { detailIdx = i; break; }
+  }
+  if (detailIdx === -1) return { rows, total: rows.length };
 
-  const headerRow = rows[headerIdx];
+  // Group header: row before detail with ≥2 non-empty cells
+  let groupIdx = -1;
+  if (detailIdx > 0 && nonEmpty(rows[detailIdx - 1]) >= 2) groupIdx = detailIdx - 1;
 
-  // 2. Check for group header row (row just before header, sparse text entries)
-  let groupRow = null;
-  if (headerIdx > 0) {
-    const prev = rows[headerIdx - 1];
-    const prevCnt = nonEmpty(prev);
-    if (prevCnt > 0 && prevCnt < bestCount) groupRow = prev;
+  const detailRow = rows[detailIdx];
+  const groupRow = groupIdx >= 0 ? rows[groupIdx] : null;
+
+  // 3. Build column names by merging group + detail rows
+  //    Fill-forward group names across empty columns (merged cells)
+  const groupFilled = new Array(maxCol + 1).fill('');
+  if (groupRow) {
+    let cur = '';
+    for (let c = 0; c <= maxCol; c++) {
+      if (groupRow[c]) cur = groupRow[c];
+      groupFilled[c] = cur;
+    }
   }
 
-  // 3. Build column names; disambiguate duplicates with group prefix
-  const nameCounts = {};
+  // For each column: use detail name if available, else group name
+  // Prefix with group when duplicates exist in detail row
+  const detailCounts = {};
   for (let c = 0; c <= maxCol; c++) {
-    const n = headerRow[c];
-    if (n) nameCounts[n] = (nameCounts[n] || 0) + 1;
+    const n = detailRow[c];
+    if (n) detailCounts[n] = (detailCounts[n] || 0) + 1;
   }
 
   const colNames = [];
-  let curGroup = '';
   for (let c = 0; c <= maxCol; c++) {
-    if (groupRow && groupRow[c]) curGroup = groupRow[c];
-    const name = headerRow[c];
-    if (!name) { colNames.push(null); continue; }
-    colNames.push(nameCounts[name] > 1 && curGroup ? `${curGroup} / ${name}` : name);
+    const detail = detailRow[c];
+    const group = groupFilled[c];
+    if (detail) {
+      // Use group prefix if duplicate detail names or if group differs from detail
+      const needPrefix = group && group !== detail && (detailCounts[detail] > 1 || (groupRow && groupRow[c] === ''));
+      colNames.push(needPrefix ? `${group} / ${detail}` : detail);
+    } else if (group) {
+      colNames.push(group);
+    } else {
+      colNames.push(null);
+    }
   }
 
-  // 4. Skip sub-header rows after header (text-only rows before first numeric row)
-  let dataStart = headerIdx + 1;
-  while (dataStart < rows.length && !hasNumber(rows[dataStart])) dataStart++;
+  // 4. Data starts at firstDataIdx
+  const dataStart = firstDataIdx;
 
   // 5. Convert data rows to objects
   const data = [];
@@ -551,7 +590,7 @@ export async function readSpreadsheet() {
   }
 
   // 6. Meta: title, params, filters from rows before header
-  const metaEnd = groupRow ? headerIdx - 1 : headerIdx;
+  const metaEnd = groupIdx >= 0 ? groupIdx : detailIdx;
   let title = '';
   const meta = [];
   for (let i = 0; i < metaEnd; i++) {
