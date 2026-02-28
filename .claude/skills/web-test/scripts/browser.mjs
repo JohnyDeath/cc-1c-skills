@@ -431,7 +431,10 @@ export async function readTable({ maxRows = 20, offset = 0 } = {}) {
  * Read report output (SpreadsheetDocumentField) rendered in iframes.
  * 1C renders spreadsheet documents as absolutely-positioned div cells inside iframes.
  * Each cell is a div[x] inside a row div[y], text content in <span>.
- * Returns { headers: string[][], data: string[][] } — arrays of cell arrays.
+ *
+ * Returns structured data:
+ *   { title, headers, data: [{col: val}], totals: {col: val}, total }
+ * If header detection fails, falls back to { rows: string[][], total }.
  */
 export async function readSpreadsheet() {
   ensureConnected();
@@ -481,7 +484,91 @@ export async function readSpreadsheet() {
     return arr;
   });
 
-  return { rows, total: rows.length };
+  // --- Structured parsing ---
+  const hasNumber = (row) => row.some(c => /^[\d\s\u00a0]/.test(c) && /\d/.test(c));
+  const nonEmpty = (row) => row.filter(c => c !== '').length;
+
+  // 1. Find header row: row with most non-empty cells BEFORE first row with numbers
+  let headerIdx = -1;
+  let bestCount = 0;
+  for (let i = 0; i < rows.length; i++) {
+    if (hasNumber(rows[i])) break;
+    const cnt = nonEmpty(rows[i]);
+    if (cnt >= bestCount) { bestCount = cnt; headerIdx = i; }
+  }
+
+  if (headerIdx === -1 || bestCount < 2) return { rows, total: rows.length };
+
+  const headerRow = rows[headerIdx];
+
+  // 2. Check for group header row (row just before header, sparse text entries)
+  let groupRow = null;
+  if (headerIdx > 0) {
+    const prev = rows[headerIdx - 1];
+    const prevCnt = nonEmpty(prev);
+    if (prevCnt > 0 && prevCnt < bestCount) groupRow = prev;
+  }
+
+  // 3. Build column names; disambiguate duplicates with group prefix
+  const nameCounts = {};
+  for (let c = 0; c <= maxCol; c++) {
+    const n = headerRow[c];
+    if (n) nameCounts[n] = (nameCounts[n] || 0) + 1;
+  }
+
+  const colNames = [];
+  let curGroup = '';
+  for (let c = 0; c <= maxCol; c++) {
+    if (groupRow && groupRow[c]) curGroup = groupRow[c];
+    const name = headerRow[c];
+    if (!name) { colNames.push(null); continue; }
+    colNames.push(nameCounts[name] > 1 && curGroup ? `${curGroup} / ${name}` : name);
+  }
+
+  // 4. Skip sub-header rows after header (text-only rows before first numeric row)
+  let dataStart = headerIdx + 1;
+  while (dataStart < rows.length && !hasNumber(rows[dataStart])) dataStart++;
+
+  // 5. Convert data rows to objects
+  const data = [];
+  let totals = null;
+  const toObj = (row) => {
+    const obj = {};
+    for (let c = 0; c < colNames.length; c++) {
+      if (colNames[c] && row[c]) obj[colNames[c]] = row[c];
+    }
+    return obj;
+  };
+
+  for (let i = dataStart; i < rows.length; i++) {
+    if (!hasNumber(rows[i]) && nonEmpty(rows[i]) === 0) continue;
+    const first = rows[i][0]?.trim().toLowerCase();
+    if (first === 'итого' || first === 'всего') {
+      totals = toObj(rows[i]);
+    } else {
+      data.push(toObj(rows[i]));
+    }
+  }
+
+  // 6. Meta: title, params, filters from rows before header
+  const metaEnd = groupRow ? headerIdx - 1 : headerIdx;
+  let title = '';
+  const meta = [];
+  for (let i = 0; i < metaEnd; i++) {
+    const parts = rows[i].filter(c => c);
+    if (!parts.length) continue;
+    if (!title) { title = parts.join(' '); continue; }
+    meta.push(parts.join(' '));
+  }
+
+  return {
+    title: title || undefined,
+    meta: meta.length ? meta : undefined,
+    headers: colNames.filter(n => n),
+    data,
+    totals: totals || undefined,
+    total: data.length,
+  };
 }
 
 /**
