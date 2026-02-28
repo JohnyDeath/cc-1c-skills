@@ -800,53 +800,51 @@ export function checkErrorsScript() {
 
     // 3+4. Modal dialogs: confirmation (multiple buttons) or error (single pressDefault)
     // Uses form container ancestry to group buttons — pressButton elements often lack form-prefixed IDs
-    const modalSurface = document.getElementById('modalSurface');
-    if (modalSurface && modalSurface.offsetWidth > 0) {
-      // Group visible pressButtons by their form container
-      const formButtons = {};
-      [...document.querySelectorAll('a.press.pressButton')].forEach(btn => {
-        if (btn.offsetWidth === 0) return;
-        const container = btn.closest('[id$="_container"]');
-        const m = container?.id?.match(/^form(\\d+)_/);
-        if (!m) return;
-        const fn = m[1];
-        if (!formButtons[fn]) formButtons[fn] = [];
-        formButtons[fn].push(btn);
-      });
+    // Note: 1C shows some modals WITHOUT #modalSurface (e.g. "Не удалось записать" uses ps*win floating window)
+    // so we always scan for small forms with button patterns, regardless of modalSurface state
+    const formButtons = {};
+    [...document.querySelectorAll('a.press.pressButton')].forEach(btn => {
+      if (btn.offsetWidth === 0) return;
+      const container = btn.closest('[id$="_container"]');
+      const m = container?.id?.match(/^form(\\d+)_/);
+      if (!m) return;
+      const fn = m[1];
+      if (!formButtons[fn]) formButtons[fn] = [];
+      formButtons[fn].push(btn);
+    });
 
+    for (const [fn, buttons] of Object.entries(formButtons)) {
+      const p = 'form' + fn + '_';
+      const elCount = document.querySelectorAll('[id^="' + p + '"]').length;
+      if (elCount > 100) continue; // Skip large content forms
+      if (buttons.length > 1) {
+        // Confirmation dialog (multiple buttons: Да/Нет, OK/Отмена, etc.)
+        const msgEl = document.getElementById(p + 'Message');
+        const message = msgEl?.innerText?.trim() || '';
+        const btnNames = buttons.map(el => {
+          const b = { name: el.innerText?.trim() || '' };
+          if (el.classList.contains('pressDefault')) b.default = true;
+          return b;
+        }).filter(b => b.name);
+        result.confirmation = { message, buttons: btnNames.map(b => b.name), formNum: parseInt(fn) };
+        break;
+      }
+    }
+
+    // Single-button modal: error dialog with pressDefault + staticText
+    if (!result.confirmation) {
       for (const [fn, buttons] of Object.entries(formButtons)) {
         const p = 'form' + fn + '_';
         const elCount = document.querySelectorAll('[id^="' + p + '"]').length;
-        if (elCount > 100) continue; // Skip large content forms
-        if (buttons.length > 1) {
-          // Confirmation dialog (multiple buttons: Да/Нет, OK/Отмена, etc.)
-          const msgEl = document.getElementById(p + 'Message');
-          const message = msgEl?.innerText?.trim() || '';
-          const btnNames = buttons.map(el => {
-            const b = { name: el.innerText?.trim() || '' };
-            if (el.classList.contains('pressDefault')) b.default = true;
-            return b;
-          }).filter(b => b.name);
-          result.confirmation = { message, buttons: btnNames.map(b => b.name), formNum: parseInt(fn) };
+        if (elCount > 100) continue;
+        if (buttons.length !== 1 || !buttons[0].classList.contains('pressDefault')) continue;
+        const texts = [...document.querySelectorAll('[id^="' + p + '"].staticText')]
+          .filter(el => el.offsetWidth > 0)
+          .map(el => el.innerText?.trim())
+          .filter(Boolean);
+        if (texts.length > 0) {
+          result.modal = { message: texts.join(' '), formNum: parseInt(fn), button: buttons[0].innerText?.trim() || '' };
           break;
-        }
-      }
-
-      // Single-button modal: error dialog with pressDefault + staticText
-      if (!result.confirmation) {
-        for (const [fn, buttons] of Object.entries(formButtons)) {
-          const p = 'form' + fn + '_';
-          const elCount = document.querySelectorAll('[id^="' + p + '"]').length;
-          if (elCount > 100) continue;
-          if (buttons.length !== 1 || !buttons[0].classList.contains('pressDefault')) continue;
-          const texts = [...document.querySelectorAll('[id^="' + p + '"].staticText')]
-            .filter(el => el.offsetWidth > 0)
-            .map(el => el.innerText?.trim())
-            .filter(Boolean);
-          if (texts.length > 0) {
-            result.modal = { message: texts.join(' '), formNum: parseInt(fn), button: buttons[0].innerText?.trim() || '' };
-            break;
-          }
         }
       }
     }
