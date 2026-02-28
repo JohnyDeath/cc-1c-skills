@@ -117,8 +117,8 @@ async function executeScript(code) {
     // and stop execution immediately with diagnostic info
     const ACTION_FNS = [
       'clickElement', 'fillFields', 'selectValue', 'fillTableRow',
-      'deleteTableRow', 'openCommand', 'navigateSection', 'closeForm',
-      'filterList', 'unfilterList'
+      'deleteTableRow', 'openCommand', 'navigateSection', 'navigateLink',
+      'closeForm', 'filterList', 'unfilterList'
     ];
     for (const name of ACTION_FNS) {
       if (typeof exports[name] !== 'function') continue;

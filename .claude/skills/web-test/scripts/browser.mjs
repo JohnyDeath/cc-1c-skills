@@ -40,7 +40,10 @@ export async function connect(url) {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: LOAD_TIMEOUT });
   } else {
     browser = await chromium.launch({ headless: false, args: ['--start-maximized'] });
-    const context = await browser.newContext({ viewport: null });
+    const context = await browser.newContext({
+      viewport: null,
+      permissions: ['clipboard-read', 'clipboard-write'],
+    });
     page = await context.newPage();
 
     // Capture seanceId from network requests for graceful logout
@@ -335,6 +338,34 @@ export async function switchTab(name) {
   if (result?.error) return result;
   await waitForStable();
   return await getFormState();
+}
+
+/** Navigate to a 1C navigation link via Shift+F11 dialog. Returns new form state. */
+export async function navigateLink(url) {
+  ensureConnected();
+  await dismissPendingErrors();
+  const formBefore = await page.evaluate(detectFormScript());
+
+  // Copy link to clipboard, press Shift+F11 (opens "Go to link" dialog with clipboard content)
+  await page.evaluate(`navigator.clipboard.writeText(${JSON.stringify(url)})`);
+  await page.keyboard.press('Shift+F11');
+  await waitForStable();
+
+  // Click "Перейти" in the navigation dialog
+  const dialog = await page.evaluate(detectFormScript());
+  if (dialog != null && dialog !== formBefore) {
+    const btns = await page.$$(`#form${dialog}_container a.press`);
+    for (const b of btns) {
+      const txt = (await b.textContent())?.trim();
+      if (txt === 'Перейти') { await b.click(); break; }
+    }
+  }
+
+  await waitForStable(formBefore);
+  const state = await getFormState();
+  const err = await checkForErrors();
+  if (err) state.errors = err;
+  return state;
 }
 
 /** Read current form state. Single evaluate call via combined script. */

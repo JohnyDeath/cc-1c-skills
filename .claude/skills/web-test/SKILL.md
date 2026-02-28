@@ -98,6 +98,7 @@ In `exec` sandbox, all browser.mjs functions are available as globals — no `im
 |----------|-------------|
 | `navigateSection(name)` | Go to section (fuzzy match). Returns `{ sections, commands }` |
 | `openCommand(name)` | Open command from function panel (fuzzy). Returns form state |
+| `navigateLink(url)` | Open 1C navigation link via Shift+F11 dialog. Returns form state |
 | `switchTab(name)` | Switch to open tab/window (fuzzy). Returns form state |
 
 ### Reading
@@ -213,6 +214,17 @@ Hint: if `readTable()` returns `hierarchical: true`, the list has groups.
 | `Shift+F4` | Reference field focused | Clear field value |
 | `F4` | Reference field focused | Open selection form |
 | `Alt+F` | List/table form | Open advanced search dialog |
+
+### Navigation links
+
+```js
+// Open any form directly by 1C navigation link (e1cib/...)
+await navigateLink('e1cib/list/РегистрНакопления.ЗаказыКлиентов');
+await navigateLink('e1cib/list/Документ.ЗаказКлиента');
+await navigateLink('e1cib/list/Справочник.Контрагенты');
+```
+
+Bypasses section/command navigation. Useful for registers, journals, and any form with a known path.
 
 ### Submenu navigation
 
