@@ -969,6 +969,24 @@ export async function clickElement(text, { dblclick } = {}) {
     return state;
   }
 
+  // For buttons that trigger server-side operations (post, write, etc.),
+  // the DOM may stabilize BEFORE the server response arrives.
+  // Use waitForSelector to detect error modal — this doesn't block the JS event loop.
+  if (target.kind === 'button') {
+    const postForm = await page.evaluate(detectFormScript());
+    if (postForm === formNum) {
+      // Form didn't change — server might still be processing.
+      // waitForSelector uses MutationObserver internally — doesn't block event loop.
+      try {
+        await page.waitForSelector(
+          '#modalSurface:not([style*="display: none"]), .balloon',
+          { state: 'visible', timeout: 10000 }
+        );
+      } catch {}
+      await waitForStable();
+    }
+  }
+
   // Form may have changed — re-detect
   const state = await getFormState();
   state.clicked = { kind: target.kind, name: target.name };
