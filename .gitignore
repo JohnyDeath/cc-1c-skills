@@ -21,3 +21,10 @@ __pycache__/
 
 # Локальный реестр баз данных 1С
 .v8-project.json
+
+# web-test: Node.js зависимости и runtime-артефакты
+.claude/skills/web-test/scripts/node_modules/
+.claude/skills/web-test/.browser-session.json
+
+# Скриншоты (артефакты тестирования web-test)
+*.png
