@@ -5,6 +5,7 @@
 import os, re, glob, sys
 
 def main():
+    print("Совет: используйте 'python scripts/switch.py --runtime python' (новый интерфейс)\n")
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     skills_dir = os.path.join(repo_root, '.claude', 'skills')
 

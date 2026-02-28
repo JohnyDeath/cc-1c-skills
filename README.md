@@ -44,13 +44,35 @@
 - **1С:Предприятие 8.3** — для сборки/разборки EPF/ERF (навыки генерации XML работают без платформы)
 - **Node.js 18+** — для `/web-test` (тестирование через браузер)
 
-### Кроссплатформенный режим (Python)
+### Другие AI-платформы
 
-На Windows рекомендуется использовать PS1-рантайм (по умолчанию) как более стабильный и протестированный. Python-порты — для **Linux/Mac** или если PowerShell недоступен. PS1-скрипты — мастер-версия; Python-порты производные (см. [Python Porting Guide](docs/python-porting-guide.md)).
+Навыки совместимы с Cursor, GitHub Copilot, OpenAI Codex, Gemini CLI и OpenCode. Скрипт `switch.py` копирует навыки в нужный формат с перезаписью путей:
 
 ```bash
-python scripts/switch-to-python.py     # переключить на Python
-python scripts/switch-to-powershell.py  # вернуть на PowerShell
+python scripts/switch.py                           # интерактивный режим (пошаговый диалог)
+python scripts/switch.py cursor                    # скопировать навыки для Cursor
+python scripts/switch.py cursor --runtime python   # Cursor + Python-рантайм
+python scripts/switch.py --undo cursor             # удалить копию
+```
+
+Поддерживаемые платформы:
+
+| Платформа | Целевой каталог | Слеш-команды |
+|-----------|----------------|--------------|
+| Claude Code | `.claude/skills/` | `/epf-init`, `/mxl-compile`, ... |
+| Cursor | `.cursor/skills/` | через меню команд |
+| GitHub Copilot | `.github/skills/` | `/skills` в чате |
+| OpenAI Codex | `.codex/skills/` | `$skill-name` |
+| Gemini CLI | `.gemini/skills/` | автоактивация |
+| OpenCode | `.opencode/skills/` | через skill tool |
+
+### Переключение рантайма (PowerShell ↔ Python)
+
+На Windows рекомендуется PS1-рантайм (по умолчанию). Python-порты — для **Linux/Mac** или если PowerShell недоступен. PS1-скрипты — мастер-версия; Python-порты производные (см. [Python Porting Guide](docs/python-porting-guide.md)).
+
+```bash
+python scripts/switch.py --runtime python      # переключить на Python
+python scripts/switch.py --runtime powershell  # вернуть на PowerShell
 ```
 
 Дополнительные зависимости Python-рантайма:

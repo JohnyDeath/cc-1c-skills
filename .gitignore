@@ -28,3 +28,10 @@ __pycache__/
 
 # Скриншоты (артефакты тестирования web-test)
 *.png
+
+# Навыки, скопированные для других AI-платформ (генерируются scripts/switch.py)
+.codex/
+.cursor/skills/
+.github/skills/
+.gemini/
+.opencode/
