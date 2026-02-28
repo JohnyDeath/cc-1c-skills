@@ -354,6 +354,13 @@ On error (auto-screenshot taken):
 { "ok": false, "error": "Element not found", "output": "...", "screenshot": "error-shot.png", "elapsed": 1.5 }
 ```
 
+## Avoiding loops
+
+- **Max 2 attempts per operation.** If an action fails twice with the same approach — stop and report to the user
+- **Not found = not found.** If `filterList` returns 0 rows or `readTable` is empty after filtering — the item likely doesn't exist in this database. Don't retry the same search 5 times with slight variations
+- **Try a different approach, not the same one.** Couldn't find via section navigation? Try `navigateLink`. Couldn't find via simple search? Try advanced search with a specific field. But don't repeat the same method
+- **Report partial results.** If you found the list but not the specific item — say so. Show what IS available instead of silently retrying
+
 ## Important notes
 
 - **Headed mode** — 1C requires visible browser, no headless
